@@ -260,7 +260,7 @@ for catalytic_residue in catalytic_residues:
     edges_catal = np.concatenate((edges_catal,
                                   np.where(destabilizing.nonzero()[0] ==
                                           catalytic_residue)[0]))
-edge_to_edge = edge_transfer_matrix(destabilizing, 562)
+edge_to_edge = edge_transfer_matrix(destabilizing, args.nresidues)
 for diag in range(edge_to_edge.shape[0]):
     edge_to_edge[diag][diag] = 0
 
