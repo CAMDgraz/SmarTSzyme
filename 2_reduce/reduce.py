@@ -202,7 +202,7 @@ jobs = np.asarray(jobs_df.iloc[:, 0])
 
 # Split jobs to calculate in parallel
 job_iterable = [(jobs[chunk*ncpus:(chunk+1)*ncpus]) for
-                chunk in range(len(jobs)//ncpus + 1)]
+                chunk in range(len(jobs)//ncpus + 1) if len(jobs) > chunk*ncpus]
 
 # TODO This is parallelization part which has to be improved
 matrix_diff_total = np.zeros((args.nresidues, args.nresidues))
