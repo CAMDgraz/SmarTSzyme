@@ -67,29 +67,40 @@ if qmmm_type == 'smd':
 # Calculate matrices ===========================================================
 interactions = ['vdw', 'hbonds', 'coulomb']
 
-# ES matrices
-print(f'\nCalculating interactions for Enzyme-Substrate complex ...')
+# Parallel calculation
+print(f'Calculating interactions for Enzyme-Substrate complex:')
 for interaction in interactions:
+    print(f'    * calcultaing {interaction} ...')
     matrix_int = np.zeros((args.nresidues, args.nresidues))
-    for job in jobs:
-        matrix_int += rf.calculate_matrix(interaction=interaction,
-                                    trajectory=f'{job}/traj_{args.sufix}.nc',
-                                    topology=f'{job}/top_{args.sufix}.parm7',
-                                    cutoff=args.cutoff/10)
+    arg1 = [interaction for i in range(len(jobs))]
+    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
+    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
+    arg4 = [args.cutoff/10 for i in range(len(jobs))]
+    with mp.Pool(processes=args.ncpus) as pool:
+        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
+                                                         arg4))
+    for result in results:
+        matrix_int += result
+    del results # clean memory
     rf.write_pickle(matrix_int,
                     f'{args.output}/matrices/{interaction}_es.pickle')
 del matrix_int
-# pTS matrices
-print(f'Calculating interactions for (pseudo) Transition State complex ...')
+
+print(f'Calculating interactions for (pseudo) Transition State complex:')
 for interaction in interactions:
+    print(f'    * calcultaing {interaction}')
     matrix_int = np.zeros((args.nresidues, args.nresidues))
-    for job, ts_index in zip(jobs, ts_indices):
-        matrix_int += rf.calculate_matrix(interaction=interaction,
-                                    trajectory=f'{job}/traj_{args.sufix}.nc',
-                                    topology=f'{job}/top_{args.sufix}.parm7',
-                                    cutoff=args.cutoff/10,
-                                    ts_index=ts_index)
-    rf.write_pickle(matrix_int, 
+    arg1 = [interaction for i in range(len(jobs))]
+    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
+    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
+    arg4 = [args.cutoff/10 for i in range(len(jobs))]
+    with mp.Pool(processes=args.ncpus) as pool:
+        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
+                                                         arg4, ts_indices))
+    for result in results:
+        matrix_int += result
+    del results # clean memory
+    rf.write_pickle(matrix_int,
                     f'{args.output}/matrices/{interaction}_pts.pickle')
 del matrix_int
 # ==============================================================================
