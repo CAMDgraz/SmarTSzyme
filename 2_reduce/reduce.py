@@ -26,7 +26,7 @@ print("""
 
 # Parse arguments ==============================================================
 args = rf.parse_arguments()
-catalytic_residues = np.asarray(args.catalytic_residues, dtype=int)
+catalytic_residues = np.asarray(args.catalytic_residues, dtype=int) - 1
 
 import os
 os.mkdir(args.output)
