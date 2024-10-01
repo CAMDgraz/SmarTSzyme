@@ -1,2 +1,0 @@
-./smd/qmmm_400
-./smd/qmmm_401
