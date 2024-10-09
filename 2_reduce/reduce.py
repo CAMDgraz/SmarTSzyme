@@ -14,6 +14,7 @@ based on the work of Amor et. al. (doi.org/10.1038/ncomms12477).
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import multiprocessing as mp
 import reduce_functions as rf
 
@@ -181,3 +182,35 @@ for residue in range(args.nresidues):
 flux_destabilizing /= np.sum(flux_destabilizing)
 rf.write_pickle(flux_destabilizing, f'{args.output}/flux_destabilizing.pickle')
 # ==============================================================================
+
+# Plot and save results ========================================================
+flux_total = flux_destabilizing - flux_stabilizing
+
+del flux_destabilizing
+del flux_stabilizing
+
+flux_positive = np.copy(flux_total)
+flux_positive[np.where(flux_positive < 0)[0]] = 0
+
+flux_negative = np.copy(flux_total)
+flux_negative[np.where(flux_negative > 0)[0]] = 0
+
+# Write results to csv
+with open(f'{args.output}/results.csv', 'w') as f:
+    f.write('residue,flux\n')
+    for resid, flux in enumerate(flux_total):
+        f.write(f'{resid + 1},{flux:.4f}\n')
+
+del flux_total
+
+rf.mplstyle()
+
+# Bar plot divided
+fig, ax = plt.subplots()
+ax.bar(np.arange(1, len(flux_positive) + 1), flux_positive, color='red',
+                 label='Destabilizing')
+ax.bar(np.arange(1, len(flux_negative) + 1), flux_negative, color='blue',
+                 label='Stabilizing')
+ax.set_xlabel(r'Residues')
+ax.set_ylabel(r'Normalized Flux')
+fig.savefig(f'{args.output}/flux_bar.png')

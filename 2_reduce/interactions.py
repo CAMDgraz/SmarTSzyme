@@ -10,7 +10,7 @@
 Calculate interactions between residues 
 """
 import numpy as np
-import extra
+import reduce_functions as rf
 from sklearn.neighbors import KDTree as kdtree
 
 def compute_vdw(traj, top_info, cutoff):
@@ -177,15 +177,15 @@ def compute_hbonds(traj, top_info, cutoff):
             acceptors_tiled = np.delete(acceptors_tiled, to_delete)
             x_repeated = np.delete(x_repeated, to_delete)
             # Calculate relevant distances 
-            acceptor_hydrogen = extra.pairwise_distance(hydrogens_repeated - 1,
+            acceptor_hydrogen = rf.pairwise_distance(hydrogens_repeated - 1,
                                           acceptors_tiled - 1, coord)
-            donor_acceptor = extra.pairwise_distance(donors_repeated - 1,
+            donor_acceptor = rf.pairwise_distance(donors_repeated - 1,
                                                acceptors_tiled - 1, coord)
-            donor_hydrogen = extra.pairwise_distance(hydrogens_repeated - 1,
+            donor_hydrogen = rf.pairwise_distance(hydrogens_repeated - 1,
                                                donors_repeated - 1, coord)
-            acceptor_x = extra.pairwise_distance(acceptors_tiled - 1, x_repeated - 1,
+            acceptor_x = rf.pairwise_distance(acceptors_tiled - 1, x_repeated - 1,
                                            coord)
-            x_hydrogen = extra.pairwise_distance(hydrogens_repeated - 1,
+            x_hydrogen = rf.pairwise_distance(hydrogens_repeated - 1,
                                            x_repeated - 1, coord)
             # Calculate angles
             cos_alpha = np.clip((donor_hydrogen**2 + acceptor_hydrogen**2 - 
