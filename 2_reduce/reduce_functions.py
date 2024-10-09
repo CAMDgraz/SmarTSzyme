@@ -6,7 +6,7 @@
 """
 
 """
-Functions used in reduce.py
+Functions used along the reduce.py script
 """
 
 # General imports
@@ -15,12 +15,15 @@ import pandas as pd
 import multiprocessing as mp
 import argparse
 import pickle
+import os
+import mdtraj as md
+import matplotlib as mpl
 
 # SmarTSyzme imports
 import topology_loaders
 import interactions
-import extra
 
+# Arguments parsing
 def parse_arguments():
     """
     Parse arguments of the cli
@@ -54,43 +57,49 @@ def parse_arguments():
     user_inputs = parser.parse_args()
     return user_inputs
 
-
-def get_matrix(trajectory, topology, ts_index, cutoff):
+# Topology and trajectory
+def load_traj(trajectory, topology):
     """
-    Calculate pairwise interactions used to determine the flux.
-    
+    Load trajectory using mdtraj
+
     Parameters
     ----------
-    trajectory: mdtraj.trajectory
-        Steered MD trajectory
-    topology: mdtraj.topology
-        System topology
-    ts_index: int
-        Index of the (pseudo) Transition State structure
-    cutoff: float
-        Cutoff (A) for the non-bonded interactions.
-
+    trajectory: str
+        Path to the trajectory file
+    topology: str
+        Path to the topology file
+    
     Return
     ------
-        matrix_es: numpy.array
-            2D array with the interactions in the Enzyme-Substrate
-            complex.
-        matrix_ts: numpy.array
-            2D array with the interactions in the Transition State complex.
+    traj: md.Trajectory
+        Trajectory loaded with mdtraj
     """
-    traj = extra.load_traj(trajectory, topology=topology)
-    top_info = topology_loaders.load_top(topology)
-    matrix_es = np.zeros((traj.n_residues, traj.n_residues))
-    matrix_es += interactions.compute_vdw(traj[0], top_info, cutoff)
-    matrix_es += interactions.compute_hbonds(traj[0], top_info, cutoff)
-    matrix_es += interactions.compute_coulomb(traj[0], top_info, cutoff)
+    name, extension = os.path.splitext(trajectory)
+    # Load trajectory
+    traj = md.load(trajectory, top=topology)
+    return traj
 
-    matrix_ts = np.zeros((traj.n_residues, traj.n_residues))
-    matrix_ts += interactions.compute_vdw(traj[ts_index], top_info, cutoff)
-    matrix_ts += interactions.compute_hbonds(traj[ts_index], top_info, cutoff)
-    matrix_ts += interactions.compute_coulomb(traj[ts_index], top_info, cutoff)
-    return matrix_es, matrix_ts
+# Main functionalities of reduce
+def pairwise_distance(atom1, atom2, coord):
+    """
+    Compute the pairwise distance between two arrays of atoms.
 
+    Parameters
+    ----------
+    atom1 : np.array
+        Numpy array with the atom indices
+    atom2 : np.array
+        Numpy array with the second atom indices
+    
+    Return
+    ------
+    distance : np.array
+        Numpy array with the pairwise distance
+    """
+    points_pair = np.vstack((atom1, atom2))
+    distance_ = np.diff(coord[points_pair.T], axis=1)**2
+    distance = (distance_.sum(axis=2)**(1/2)).flatten()
+    return distance
 
 def indentify_smd_TS(work_file):
     """
@@ -156,39 +165,12 @@ def edge_transfer_matrix(matrix, N):
 
     return edge_to_edge
 
-def get_difference_matrix(job_path):
-    """
-    Return the difference (matrix) between the (pseudo) Transition State  and
-    the Enzyme-Substrate complexes.
-
-    Parameters
-    ----------
-        job_path: str
-            Path to the folder containing the Steered MD job.
-        
-    Return
-    ------
-        matrix_dif: numpy.array
-            2D array with the difference between the (pseudo) Transition State
-            and the Enzyme-Substrate complexes.
-    """
-    ts_index = find_TS(f'{job_path}/smd_{args.sufix}.txt')
-    if ts_index % 2 == 1:
-        ts_index = int(ts_index/2 + 0.5)
-    else:
-        ts_index = int(ts_index/2)
-    matrix_es, matrix_ts = get_matrix(f'{job_path}/traj_{args.sufix}.nc',
-                                      f'{job_path}/top_{args.sufix}.parm7',
-                                        ts_index, cutoff)
-    matrix_diff = matrix_ts - matrix_es
-    return matrix_diff
-
 def calculate_matrix(interaction, trajectory, topology, cutoff, ts_index=None):
     """
     Calculate the Van der Waals interactions for the ES and TS.
     """
 
-    traj = extra.load_traj(trajectory, topology=topology)
+    traj = load_traj(trajectory, topology=topology)
     top_info = topology_loaders.load_top(topology)
 
     if not ts_index:
@@ -207,6 +189,7 @@ def calculate_matrix(interaction, trajectory, topology, cutoff, ts_index=None):
             matrix = interactions.compute_hbonds(traj[ts_index], top_info, cutoff)
     return matrix
 
+# Output
 def write_pickle(matrix, file):
     with open(file, 'wb') as f:
         pickle.dump(matrix, f)
@@ -216,3 +199,42 @@ def load_pickle(file):
     with open(file, 'rb') as f:
         data = pickle.load(f)
     return data
+
+def mplstyle():
+    mpl.rcParams['axes.titlesize'] = 30
+    mpl.rcParams['axes.labelsize'] = 30
+    mpl.rcParams['axes.spines.top'] = True
+    mpl.rcParams['axes.spines.bottom'] = True
+    mpl.rcParams['axes.spines.left'] = True
+    mpl.rcParams['axes.spines.right'] = True
+    mpl.rcParams['axes.linewidth'] = 2
+    mpl.rcParams['axes.titlepad'] = 10
+
+    # Latex configuration
+    mpl.rcParams['text.usetex'] = False
+
+    # Legend configuration
+    mpl.rcParams['legend.fancybox'] = True
+    mpl.rcParams['legend.loc'] = 'lower right'
+    mpl.rcParams['legend.fontsize'] = 20
+    mpl.rcParams['legend.handletextpad'] = 0.1
+
+    # Ticks configuration
+    mpl.rcParams['xtick.labelsize'] = 20
+    mpl.rcParams['ytick.labelsize'] = 20
+    mpl.rcParams['xtick.direction'] = 'in'
+    mpl.rcParams['ytick.direction'] = 'in'
+    mpl.rcParams['xtick.color'] = (0.2, 0.2, 0.2)
+    mpl.rcParams['ytick.color'] = (0.2, 0.2, 0.2)
+
+    # Figure configuration
+    mpl.rcParams['figure.figsize'] = 10, 10
+    mpl.rcParams['figure.dpi'] = 300
+
+    # Layout
+    mpl.rcParams['figure.constrained_layout.use'] = True
+
+    # Saving
+    mpl.rcParams['savefig.dpi'] = 300
+    mpl.rcParams['savefig.transparent'] = False
+    return None
