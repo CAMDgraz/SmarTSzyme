@@ -41,8 +41,6 @@ def parse_arguments():
                             help="Pretrained model name", nargs="+")
     inputs_esm.add_argument("--fasta", type=str, 
                             help="fasta file containing the sequence")
-    inputs_esm.add_argument("--offset-idx", type=int, default=0,
-                            help="Offset of the mutation positions")
     inputs_esm.add_argument("--scoring-strategy", type=str,
                             default="wt-marginals",
                             choices=["wt-marginals", "masked-marginals"])

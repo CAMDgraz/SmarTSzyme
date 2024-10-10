@@ -96,7 +96,7 @@ with open(args.fasta, 'r') as f:
             pass
         else:
             sequence = list(str(line))
-
+offset_idx = 1
 # Provisional, remove the second chain residues #####
 column = ['mutation']
 data = []
@@ -106,7 +106,7 @@ for position in npositive_res:
     for aa in aa_list:
         data.append(f'{sequence[position - 1]}{position}{aa}')
 df = pd.DataFrame(data=data, columns=column)
-
+sequence = ''.join(sequence)
 device = torch.device("cuda" if torch.cuda.is_available() and
                       not args.nogpu else "cpu")
 
@@ -127,8 +127,8 @@ for model_location in args.model_location:
             token_probs = torch.log_softmax(model(batch_tokens)["logits"],
                                             dim=-1)
         df[model_location] = df.apply(
-            lambda row: sf.label_row(row[args.mutation_col], args.sequence,
-                                     token_probs, alphabet, args.offset_idx),
+            lambda row: sf.label_row(row[column[0]], sequence,
+                                     token_probs, alphabet, offset_idx),
                                     axis=1)
     elif args.scoring_strategy == "masked-marginals":
         all_token_probs = []
@@ -141,8 +141,8 @@ for model_location in args.model_location:
             all_token_probs.append(token_probs[:, i])
         token_probs = torch.cat(all_token_probs, dim=0).unsqueeze(0)
         df[model_location] = df.apply(
-            lambda row: sf.label_row(row[args.mutation_col], args.sequence,
-                                     token_probs, alphabet, args.offset_idx),
+            lambda row: sf.label_row(row[column], sequence,
+                                     token_probs, alphabet, offset_idx),
             axis=1)
 
-df.to_csv('out_test_esm.csv')
+df.to_csv(f'{args.output}/out_test_esm.csv')
