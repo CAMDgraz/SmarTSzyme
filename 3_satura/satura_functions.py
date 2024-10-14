@@ -13,10 +13,14 @@ Functions used along satura.py script. The esm functions are taken from
 # General imports
 import matplotlib as mpl
 import argparse
+import pandas as pd
 
 # ESM imports
 import pathlib
 import string
+import torch
+from esm import pretrained
+from tqdm import tqdm
 
 # Arguments parsering
 def parse_arguments():
@@ -31,11 +35,11 @@ def parse_arguments():
                                      allow_abbrev = False)
     inputs = parser.add_argument_group(title='Input options')
     inputs.add_argument('-file', dest='flux_file', action = 'store',
-                        type=str, required = True,
+                        type=str, 
                         help = 'Path to the csv file output of reduce.')
     inputs.add_argument('-maxres', dest = 'max_residues', action = 'store', 
                       help = 'Top n residues to select.',
-                      type=int, required = True)
+                      type=int)
     inputs.add_argument('-model', dest='model', action='store', nargs='+',type=str,
                         help = 'Model to use.', choices=["esm", "evcouplings"],
                         default = ['esm', 'evcouplings'])
@@ -78,13 +82,13 @@ def label_row(row, sequence, token_probs, alphabet, offset_idx):
     return score.item()
 
 
-def run_esm(sequence, df, args=args):
+def run_esm(sequence, df, column, arguments):
     offset_idx = 1  # offset needed matching the residue with the position
     device = torch.device("cuda" if torch.cuda.is_available() and
-                                    not args.nogpu else "cpu")
+                                    not arguments.nogpu else "cpu")
     # compute for each models
 
-    for model_location in args.model_location:
+    for model_location in arguments.model_location:
         model, alphabet = pretrained.load_model_and_alphabet(model_location)
         model = model.to(device)
         model.eval()
@@ -94,15 +98,15 @@ def run_esm(sequence, df, args=args):
         batch_labels, batch_strs, batch_tokens = batch_converter(data)
         batch_tokens = batch_tokens.to(device)
 
-        if args.scoring_strategy == "wt-marginals":
+        if arguments.scoring_strategy == "wt-marginals":
             with torch.no_grad():
                 token_probs = torch.log_softmax(model(batch_tokens)["logits"],
                                                 dim=-1)
             df[model_location] = df.apply(
-                lambda row: sf.label_row(row[column[0]], sequence,
+                lambda row: label_row(row[column[0]], sequence,
                                          token_probs, alphabet, offset_idx),
                 axis=1)
-        elif args.scoring_strategy == "masked-marginals":
+        elif arguments.scoring_strategy == "masked-marginals":
             all_token_probs = []
             for i in tqdm(range(batch_tokens.size(1))):
                 batch_tokens_masked = batch_tokens.clone()
@@ -113,12 +117,12 @@ def run_esm(sequence, df, args=args):
                 all_token_probs.append(token_probs[:, i])
             token_probs = torch.cat(all_token_probs, dim=0).unsqueeze(0)
             df[model_location] = df.apply(
-                lambda row: sf.label_row(row[column], sequence,
+                lambda row: label_row(row[column], sequence,
                                          token_probs, alphabet, offset_idx),
                 axis=1)
 
     df['mean'] = df.iloc[:, 1:].mean(axis=1)
-    df.to_csv(f'{args.output}/esm_scoring.csv')
+    df.to_csv(f'{arguments.output}/esm_scoring.csv')
     return df
 
 # Output

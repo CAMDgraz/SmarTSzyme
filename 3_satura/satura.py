@@ -38,6 +38,8 @@ sf.mplstyle()
 aa_list = np.asarray(['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N',
                      'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y'])
 
+os.mkdir(args.output)
+
 if not args.positions:
     # Read reduce results ==========================================================
     flux_pd = pd.read_csv(args.flux_file)
@@ -51,8 +53,7 @@ if not args.positions:
 
     del flux_total
 
-    os.mkdir(args.output)
-
+    
     # Select residues for next step =================================================
     ordered_positive = []
     ordered_negative = []
@@ -120,11 +121,12 @@ if 'esm' in args.model:
     df = pd.DataFrame(data=data, columns=column)
     sequence = ''.join(sequence)
 
-    esm_df = sf.run_esm(sequence, df, args=args)
+
+    esm_df = sf.run_esm(sequence, df, column, arguments=args)
 
     # Plot ESM results
-    scores = np.asarray(df.iloc[:, -1]).reshape((-1, 20))
-    del df
+    scores = np.asarray(esm_df.iloc[:, -1]).reshape((-1, 20))
+    del esm_df
 
     min_val = scores.min()
     max_val = scores.max()
