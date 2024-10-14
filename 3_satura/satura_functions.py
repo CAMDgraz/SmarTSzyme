@@ -37,14 +37,19 @@ def parse_arguments():
                       help = 'Top n residues to select.',
                       type=int, required = True)
     inputs_esm = parser.add_argument_group(title='ESM inputs')
-    inputs_esm.add_argument("--model-location", type=str,
-                            help="Pretrained model name", nargs="+")
-    inputs_esm.add_argument("--fasta", type=str, 
+    inputs_esm.add_argument("-model-location", type=str,
+                            help="Pretrained model name", nargs="+",
+                            default=['esm1v_t33_650M_UR90S_1',
+                                     'esm1v_t33_650M_UR90S_2',
+                                     'esm1v_t33_650M_UR90S_3',
+                                     'esm1v_t33_650M_UR90S_4',
+                                     'esm1v_t33_650M_UR90S_5'])
+    inputs_esm.add_argument("-fasta", type=str, 
                             help="fasta file containing the sequence")
-    inputs_esm.add_argument("--scoring-strategy", type=str,
+    inputs_esm.add_argument("-scoring-strategy", type=str,
                             default="wt-marginals",
                             choices=["wt-marginals", "masked-marginals"])
-    inputs_esm.add_argument("--nogpu", action="store_true",
+    inputs_esm.add_argument("-nogpu", action="store_true",
                             help="Do not use GPU even if available")
     outputs = parser.add_argument_group(title='Output options')
     outputs.add_argument('-out', dest = 'output', type = str,

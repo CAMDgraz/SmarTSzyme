@@ -15,6 +15,7 @@ import os
 import heapq
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Satura imports
@@ -22,11 +23,9 @@ import satura_functions as sf
 
 # ESM imports
 import torch
-from esm import Alphabet, pretrained, MSATransformer
+from esm import pretrained
 import pandas as pd
 from tqdm import tqdm
-from Bio import SeqIO
-import itertools
 
 print("""
 ********************************************************************************
@@ -35,9 +34,8 @@ print("""
 ********************************************************************************
 """)
 
-aa_list = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q',
-           'R', 'S', 'T', 'V', 'W', 'Y']
 args = sf.parse_arguments()
+sf.mplstyle()
 
 # Read reduce results ==========================================================
 flux_pd = pd.read_csv(args.flux_file)
@@ -89,6 +87,10 @@ ax.set_ylabel(r'|Normalized flux|')
 fig.savefig(f'{args.output}/top_positive_flux.png')
 
 # Run ESM ======================================================================
+aa_list = np.asarray(['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N',
+                     'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y'])
+
+# Read sequence from fasta
 with open(args.fasta, 'r') as f:
     lines = f.readlines()
     for line in lines:
@@ -96,13 +98,20 @@ with open(args.fasta, 'r') as f:
             pass
         else:
             sequence = list(str(line))
-offset_idx = 1
+offset_idx = 1 # offset needed matching the residue with the position
+
 # Provisional, remove the second chain residues #####
 column = ['mutation']
 data = []
+positions = []
+original_aas = []
+
 for position in npositive_res:
     if position > 155:
         continue
+    else:
+        positions.append(position)
+        original_aas.append(sequence[position - 1])
     for aa in aa_list:
         data.append(f'{sequence[position - 1]}{position}{aa}')
 df = pd.DataFrame(data=data, columns=column)
@@ -145,4 +154,29 @@ for model_location in args.model_location:
                                      token_probs, alphabet, offset_idx),
             axis=1)
 
-df.to_csv(f'{args.output}/out_test_esm.csv')
+df['mean'] = df.iloc[:, 1:].mean(axis=1)
+df.to_csv(f'{args.output}/esm_scoring.csv')
+
+# Plot ESM results
+scores = np.asarray(df.iloc[:, -1]).reshape((-1, 20))
+del df
+
+min_val = scores.min()
+max_val = scores.max()
+cbar_limit = abs(min_val) if abs(min_val) > abs(max_val) else abs(max_val)
+fig, ax = plt.subplots()
+sns.heatmap(scores.T, ax=ax, cmap='coolwarm_r', center=0, vmin=-cbar_limit,
+            vmax=cbar_limit)
+ax.set_yticks(np.arange(0.5, len(aa_list) + 0.5, 1))
+ax.set_yticklabels(aa_list, rotation=0)
+ax.set_ylabel(r'Mutation')
+ax.set_xticks(np.arange(0.5, len(positions) + 0.5, 1))
+ax.set_xticklabels(positions, rotation=0)
+ax.set_xlabel(r'Residues')
+
+for pos_idx, pos in enumerate(positions):
+    original_aa = np.where(aa_list == original_aas[pos_idx])[0]
+    y_pos = np.arange(0.5, len(aa_list) + 0.5, 1)[original_aa]
+    x_pos = np.arange(0.5, len(positions) + 0.5, 1)[pos_idx]
+    ax.scatter(x_pos, y_pos, color='black', marker='o')
+fig.savefig(f'{args.output}/single_mutations.png')
