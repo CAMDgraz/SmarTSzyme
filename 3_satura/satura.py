@@ -1,13 +1,13 @@
 #!/bin/python
 
 """
-@autors: Daniel Platero Rochart [daniel.platero-rochart@medunigraz.at]
+@authors: Daniel Platero-Rochart [daniel.platero-rochart@medunigraz.at]
          Pedro A. Sánchez-Murcia [pedro.murcia@medunigraz.at]
 """
 
 """
 Satura:
-Scoring of mutations based on MSA model (evcoupling) and sequence model (ESM)
+Scoring of mutations based on MSA model (evcouplings) and sequence model (ESM)
 """
 
 # General imports
@@ -18,18 +18,13 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Satura imports
+# satura_functions.py import
 import satura_functions as sf
-
-# ESM imports
-import torch
-from esm import pretrained
-from tqdm import tqdm
 
 print("""
 ********************************************************************************
 * SmarTSzyme-satura:                                                           *
-*     Scoring single point mutations based on the selected residues            *
+*     Scoring single point mutations for the selected residues                 *
 ********************************************************************************
 """)
 
@@ -63,39 +58,39 @@ if not args.positions:
 
     for res_id, flux in enumerate(flux_negative):
         heapq.heappush(ordered_negative, (flux, res_id + 1))
-    nnegative = heapq.nsmallest(args.max_residues, ordered_negative)
-    nnegative_res = np.asarray([neg[1] for neg in nnegative])
-    nnegative_flux = np.asarray([neg[0] for neg in nnegative])
+    n_negative = heapq.nsmallest(args.max_residues, ordered_negative)
+    n_negative_res = np.asarray([neg[1] for neg in n_negative])
+    n_negative_flux = np.asarray([neg[0] for neg in n_negative])
 
     for res_id, flux in enumerate(flux_positive):
         heapq.heappush(ordered_positive, (flux, res_id + 1))
-    npositive = heapq.nlargest(args.max_residues, ordered_positive)
-    npositive_res = np.asarray([pos[1] for pos in npositive])
-    npositive_flux = np.asarray([pos[0] for pos in npositive])
+    n_positive = heapq.nlargest(args.max_residues, ordered_positive)
+    n_positive_res = np.asarray([pos[1] for pos in n_positive])
+    n_positive_flux = np.asarray([pos[0] for pos in n_positive])
 
     fig, ax = plt.subplots()
-    ax.bar(np.arange(len(nnegative_res)), -nnegative_flux, color='blue')
+    ax.bar(np.arange(len(n_negative_res)), -n_negative_flux, color='blue')
     ax.set_xlabel(r'Residues')
-    ax.set_xticks(np.arange(len(nnegative_res)))
-    ax.set_xticklabels(nnegative_res, rotation=45, size=10)
+    ax.set_xticks(np.arange(len(n_negative_res)))
+    ax.set_xticklabels(n_negative_res, rotation=45, size=10)
     ax.set_ylabel(r'|Normalized flux|')
     fig.savefig(f'{args.output}/top_negative_flux.png')
 
     fig, ax = plt.subplots()
-    ax.bar(np.arange(len(npositive_res)), npositive_flux, color='red')
+    ax.bar(np.arange(len(n_positive_res)), n_positive_flux, color='red')
     ax.set_xlabel(r'Residues')
-    ax.set_xticks(np.arange(len(npositive_res)))
-    ax.set_xticklabels(npositive_res, rotation=45, size=10)
+    ax.set_xticks(np.arange(len(n_positive_res)))
+    ax.set_xticklabels(n_positive_res, rotation=45, size=10)
     ax.set_ylabel(r'|Normalized flux|')
     fig.savefig(f'{args.output}/top_positive_flux.png')
 
-    positions = npositive_res
+    positions = n_positive_res
 
 else:
     positions = args.positions
 
 if 'esm' in args.model:
-    print('Running ESM model(s)')
+    print('Running ESM model(s) ...')
     # Read sequence from fasta
     with open(args.fasta, 'r') as f:
         lines = f.readlines()
@@ -103,7 +98,7 @@ if 'esm' in args.model:
             if line.startswith('>'):
                 pass
             else:
-                sequence = list(str(line))
+                sequence = list(str(line.strip()))
 
     column = ['mutation']
     data = []
@@ -111,13 +106,18 @@ if 'esm' in args.model:
     original_aas = []
 
     for position in positions:
-        if position > 155:
-            continue
+        if position > len(sequence):
+            position_first_chain = (position - len(sequence)) + args.offset_chain
+            positions_esm.append(position_first_chain)
+            original_aas.append(sequence[position_first_chain - 1])
+            print(f"Position {position} equivalent to {position_first_chain} in the provided chain.")
+            for aa in aa_list:
+                data.append(f'{sequence[position_first_chain - 1]}{position_first_chain}{aa}')
         else:
             positions_esm.append(position)
             original_aas.append(sequence[position - 1])
-        for aa in aa_list:
-            data.append(f'{sequence[position - 1]}{position}{aa}')
+            for aa in aa_list:
+                data.append(f'{sequence[position - 1]}{position}{aa}')
     df = pd.DataFrame(data=data, columns=column)
     sequence = ''.join(sequence)
 

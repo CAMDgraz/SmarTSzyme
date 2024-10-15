@@ -27,8 +27,7 @@ def parse_arguments():
     """
     Parse arguments of the cli
     """
-    desc = '''\nSatura: Scoring of single point mutations based on the position
-                        identified by reduce'''
+    desc = '''\nSatura: Scoring of single point mutations of the position identified by reduce'''
     parser = argparse.ArgumentParser(prog='Reduce',
                                      description = desc,
                                      add_help=True,
@@ -45,6 +44,7 @@ def parse_arguments():
                         default = ['esm', 'evcouplings'])
     inputs.add_argument('-positions', dest='positions', action = 'store', type=int, nargs='+',
                         default=None)
+    inputs.add_argument('-offset_chain', dest='offset_chain', type=int, action='store', default=0)
     inputs_esm = parser.add_argument_group(title='ESM inputs')
     inputs_esm.add_argument("-model-location", type=str,
                             help="Pretrained model name", nargs="+",
