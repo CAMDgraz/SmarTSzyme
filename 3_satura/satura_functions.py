@@ -27,8 +27,9 @@ def parse_arguments():
     """
     Parse arguments of the cli
     """
-    desc = '''\nSatura: Scoring of single point mutations of the position identified by reduce'''
-    parser = argparse.ArgumentParser(prog='Reduce',
+    desc = '''\nSatura: Scoring of single point mutations of the position
+               identified by reduce'''
+    parser = argparse.ArgumentParser(prog='Satura',
                                      description = desc,
                                      add_help=True,
                                      allow_abbrev = False)
@@ -40,8 +41,11 @@ def parse_arguments():
                       help = 'Top n residues to select.',
                       type=int)
     inputs.add_argument('-model', dest='model', action='store', nargs='+',type=str,
-                        help = 'Model to use.', choices=["esm", "evcouplings"],
-                        default = ['esm', 'evcouplings'])
+                        help='''Model(s) to use in the prediction of mutations.
+                                If no model is selected (default) only the
+                                selection of residues is done''',
+                        choices=["None", "esm", "evcouplings"],
+                        default = ['None'])
     inputs.add_argument('-positions', dest='positions', action = 'store', type=int, nargs='+',
                         default=None)
     inputs.add_argument('-offset_chain', dest='offset_chain', type=int, action='store', default=0)
@@ -60,6 +64,12 @@ def parse_arguments():
                             choices=["wt-marginals", "masked-marginals"])
     inputs_esm.add_argument("-nogpu", action="store_true",
                             help="Do not use GPU even if available")
+    inputs_ev = parser.add_argument_group(title='EVmutations inputs')
+    inputs_ev.add_argument("-ev_model", dest='ev_model', type=str,
+                           required=False,
+                           help='Path to the evcoupling model file')
+    #TODO: Add path for the external tools
+
     outputs = parser.add_argument_group(title='Output options')
     outputs.add_argument('-out', dest = 'output', type = str,
                          default = './', help = 'Output path.')

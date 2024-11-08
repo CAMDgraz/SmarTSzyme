@@ -1,4 +1,4 @@
-name: smartszyme_dev2
+name: smartszyme_esm
 channels:
   - anaconda
   - conda-forge
@@ -14,3 +14,7 @@ dependencies:
   - scipy=1.12.0
   - numexpr=2.8.4
   - pyarrow=14.0.2
+  - tqdm
+  - pip:
+      - fair-esm
+      - https://github.com/debbiemarkslab/EVcouplings/archive/develop.zip 
