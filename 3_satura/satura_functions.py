@@ -147,7 +147,8 @@ def mplstyle():
     mpl.rcParams['axes.titlepad'] = 10
 
     # Latex configuration
-    mpl.rcParams['text.usetex'] = False
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['font.family'] = 'Arial'
 
     # Legend configuration
     mpl.rcParams['legend.fancybox'] = True

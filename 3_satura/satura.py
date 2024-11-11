@@ -189,11 +189,11 @@ if 'evcouplings' in args.model and 'None' not in args.model:
     fig, ax = plt.subplots()
     sns.heatmap(scores.T, ax=ax, center=0, cmap='coolwarm_r',
                 vmin=-cbar_limit, vmax=cbar_limit)
-    ax.set_ylabel(r'Amino Acids')
+    ax.set_ylabel(r'Mutations')
     ax.set_yticks(np.arange(0.5, len(aa_list) + 0.5, 1))
     ax.set_yticklabels(aa_list, rotation=0)
 
-    ax.set_label(r'Positions')
+    ax.set_xlabel(r'Residues')
     ax.set_xticks(np.arange(0.5, len(positions) + 0.5, 1))
     ax.set_xticklabels(positions, rotation=45)
 
