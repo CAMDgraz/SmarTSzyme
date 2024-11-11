@@ -59,6 +59,7 @@ Output options:
 ```
 
 In the the example folder, you will find a topology, trajectory and steered MD output file to run a test. For reproducing the results type the following command in the console:
+
 ```bash
 cd example
 python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 183 450 486 562 -cutoff 10 -ncpus 1 -out out_reduce
@@ -66,10 +67,14 @@ python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 1
 ## License
 **SmarTSzyme** is licensed under GNU General Public License v3.0.
 
-## Contact 
-In case of questions and/or suggestions you can contact us at daniel.platero-rochart@medunigraz.at
+## Contact
+**Computed-Aided Molecular Design**\
 
 Division of Medicinal Chemistry\
 Medical University of Graz\
 Neue Stiftingstalstraße 6/III\
 A-8010 Graz, Austria
+
+Head of the Group: Ass.-Prof. Dr. Pedro A. Sánchez Murcia
+ 
+In case of questions and/or suggestions you can contact us at: pedro.murcia@medunigraz.at and  daniel.platero-rochart@medunigraz.at
