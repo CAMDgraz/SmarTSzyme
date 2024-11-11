@@ -1,10 +1,10 @@
 # SmarTSzyme
 ![alt text](./cover_temp2.png)
-SmarTSzyme is a command-line interface (CLI) for the rational (re-)design of enzymes.
+**SmarTSzyme** is a command-line interface (CLI) for the rational (re-)design of enzymes.
 
 ## Installation
 ### SmarTSzyme
-To run SmarTSzyme,
+To run **SmarTSzyme**,
 ```bash
 conda env create -f environment.yml
 conda activate smartszyme_env
@@ -15,7 +15,7 @@ git clone https://github.com/CAMDGraz/SmarTSzyme.git
 ```
 
 ## Preparation of the steered Molecular Dynamics files
-SmarTSzyme requires a pre-process of the input files (topologies, trajectories and steered MD output). All of them need to have the following structure:
+**SmarTSzyme** requires a pre-process of the input files (topologies, trajectories and steered MD output). All of them need to have the following structure:
 ```bash
 top_<suffix>.parm7
 traj_<suffix>.nc
@@ -23,7 +23,7 @@ smd_<suffix>.txt
 ```
 
 ## Basic Usage
-You can display the help of SmarTSzyme in the command-line as follows:
+You can display the help of **SmarTSzyme** in the command-line as follows:
 ```bash
 python 2_reduce/reduce.py -h
 
@@ -63,4 +63,5 @@ In the the example folder, you will find a topology, trajectory and steered MD o
 cd example
 python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 183 450 486 562 -cutoff 10 -ncpus 1 -out out_reduce
 ```
-
+## License
+**SmarTSzyme** is licensed under GNU General Public License v3.0.
