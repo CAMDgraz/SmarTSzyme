@@ -65,3 +65,11 @@ python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 1
 ```
 ## License
 **SmarTSzyme** is licensed under GNU General Public License v3.0.
+
+## Contact 
+In case of questions and/or suggestions you can contact us at daniel.platero-rochart@medunigraz.at
+
+Division of Medicinal Chemistry\
+Medical University of Graz\
+Neue Stiftingstalstraße 6/III\
+A-8010 Graz, Austria
