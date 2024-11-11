@@ -68,7 +68,7 @@ python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 1
 **SmarTSzyme** is licensed under GNU General Public License v3.0.
 
 ## Contact
-**Computed-Aided Molecular Design**\
+**Computed-Aided Molecular Design**
 
 Division of Medicinal Chemistry\
 Medical University of Graz\
