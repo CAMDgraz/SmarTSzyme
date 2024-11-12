@@ -125,7 +125,7 @@ def indentify_smd_TS(work_file):
         if diff < 0 and maximum_value < works[frame]:
             maximum = frame
             maximum_value = works[frame]
-    return maximum
+    return maximum, len(works)
 
 def edge_transfer_matrix(matrix, N):
     """

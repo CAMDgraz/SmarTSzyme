@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import reduce_functions as rf
+import mdtraj as md
 
 print("""
 ********************************************************************************
@@ -43,40 +44,46 @@ print(f'Number of trajectories: {len(jobs)}')
 
 # Get TS indices ===============================================================
 qmmm_type = 'smd'
+traj = md.load(f'{jobs[0]}/traj_{args.sufix}.nc', top=f'{jobs[0]}/top_{args.sufix}.parm7')
+nframes = traj.n_frames
+del traj
 
 if qmmm_type == 'smd':
     ts_indices = np.zeros(len(jobs), dtype=np.int16)
     for job_idx, job in enumerate(jobs):
-        ts_index = rf.indentify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
-        # TODO: Check this part (index in txt vs number of frames in the traj)
-        if ts_index % 2 == 1:
-            ts_index = int(ts_index/2 + 0.5)
+        ts_index, work_lines = rf.indentify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
+        factor = int(work_lines/nframes)
+        if ts_index % factor != 0:
+            ts_index = int(ts_index//factor + 1)
         else:
-            ts_index = int(ts_index/2)
-        ts_indices[job_idx] =  ts_index
+            ts_index = int(ts_index//factor)
+        ts_indices[job_idx] = ts_index
+    with open(f'{args.output}/ts_indexes.dat', 'w') as f:
+        for job, ts in zip(jobs, ts_indices):
+            f.write(f'{job},{ts_index}\n')
 # ==============================================================================
 
 # Calculate matrices ===========================================================
 interactions = ['vdw', 'hbonds', 'coulomb']
 
 # Parallel calculation
-print(f'Calculating interactions for Enzyme-Substrate complex:')
-for interaction in interactions:
-    print(f'    * calculating {interaction}')
-    matrix_int = np.zeros((args.nresidues, args.nresidues))
-    arg1 = [interaction for i in range(len(jobs))]
-    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
-    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
-    arg4 = [args.cutoff/10 for i in range(len(jobs))]
-    with mp.Pool(processes=args.ncpus) as pool:
-        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
-                                                              arg4))
-    for result in results:
-        matrix_int += result
-    del results # clean memory
-    rf.write_pickle(matrix_int,
-                    f'{args.output}/matrices/{interaction}_es.pickle')
-del matrix_int
+#print(f'Calculating interactions for Enzyme-Substrate complex:')
+#for interaction in interactions:
+#    print(f'    * calculating {interaction}')
+#    matrix_int = np.zeros((args.nresidues, args.nresidues))
+#    arg1 = [interaction for i in range(len(jobs))]
+#    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
+#    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
+#    arg4 = [args.cutoff/10 for i in range(len(jobs))]
+#    with mp.Pool(processes=args.ncpus) as pool:
+#        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
+#                                                              arg4))
+#    for result in results:
+#        matrix_int += result
+#    del results # clean memory
+#    rf.write_pickle(matrix_int,
+#                    f'{args.output}/matrices/{interaction}_es.pickle')
+#del matrix_int
 
 print(f'Calculating interactions for (pseudo) Transition State complex:')
 for interaction in interactions:
