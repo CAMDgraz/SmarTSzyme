@@ -67,23 +67,23 @@ if qmmm_type == 'smd':
 interactions = ['vdw', 'hbonds', 'coulomb']
 
 # Parallel calculation
-#print(f'Calculating interactions for Enzyme-Substrate complex:')
-#for interaction in interactions:
-#    print(f'    * calculating {interaction}')
-#    matrix_int = np.zeros((args.nresidues, args.nresidues))
-#    arg1 = [interaction for i in range(len(jobs))]
-#    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
-#    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
-#    arg4 = [args.cutoff/10 for i in range(len(jobs))]
-#    with mp.Pool(processes=args.ncpus) as pool:
-#        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
-#                                                              arg4))
-#    for result in results:
-#        matrix_int += result
-#    del results # clean memory
-#    rf.write_pickle(matrix_int,
-#                    f'{args.output}/matrices/{interaction}_es.pickle')
-#del matrix_int
+print(f'Calculating interactions for Enzyme-Substrate complex:')
+for interaction in interactions:
+    print(f'    * calculating {interaction}')
+    matrix_int = np.zeros((args.nresidues, args.nresidues))
+    arg1 = [interaction for i in range(len(jobs))]
+    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
+    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
+    arg4 = [args.cutoff/10 for i in range(len(jobs))]
+    with mp.Pool(processes=args.ncpus) as pool:
+        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
+                                                              arg4))
+    for result in results:
+        matrix_int += result
+    del results # clean memory
+    rf.write_pickle(matrix_int,
+                    f'{args.output}/matrices/{interaction}_es.pickle')
+del matrix_int
 
 print(f'Calculating interactions for (pseudo) Transition State complex:')
 for interaction in interactions:
