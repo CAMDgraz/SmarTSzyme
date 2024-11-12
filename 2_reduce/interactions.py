@@ -231,15 +231,15 @@ def compute_hbonds(traj, top_info, cutoff):
                     b_score[ind] = 0
             # Checking charge
             charge_factor = np.zeros(len(hydrogens_repeated), dtype=np.float32)
-            for donor, acceptor, ind in zip(donors_repeated, acceptors_tiled,
+            for donor, acceptor, ind in zip(donors_repeated-1, acceptors_tiled-1,
                                             range(len(donors_repeated))):
+                
                 if charges[donor] != 0 and charges[acceptor] != 0:
                     charge_factor[ind] = -3
                 elif charges[donor] == 0 and charges[acceptor] == 0:
                     charge_factor[ind] = -1
                 else:
                     charge_factor[ind] = -2
-
             hbonds_matrix[residue1][residue2] = np.sum(r_score*a_score*b_score*charge_factor)
             hbonds_matrix[residue2][residue1] = np.sum(r_score*a_score*b_score*charge_factor)
     return hbonds_matrix
