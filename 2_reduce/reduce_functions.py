@@ -123,7 +123,7 @@ def indentify_smd_TS(work_file):
     maximum_value = 0
     for frame, diff in enumerate(works_diff):
         if diff < 0 and maximum_value < works[frame]:
-            maximum = frame
+            maximum = frame + 1
             maximum_value = works[frame]
     return maximum, len(works)
 
