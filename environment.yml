@@ -1,4 +1,4 @@
-name: smartszyme_dev2
+name: smartszyme_env
 channels:
   - anaconda
   - conda-forge
