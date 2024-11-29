@@ -6,12 +6,12 @@
 ### SmarTSzyme
 To run **SmarTSzyme**,
 ```bash
+git clone https://github.com/CAMDGraz/SmarTSzyme.git
+```
+```bash
+cd /path/to/SmarTSzyme
 conda env create -f environment.yml
 conda activate smartszyme_env
-```
-
-```bash
-git clone https://github.com/CAMDGraz/SmarTSzyme.git
 ```
 
 ## Preparation of the steered Molecular Dynamics files
