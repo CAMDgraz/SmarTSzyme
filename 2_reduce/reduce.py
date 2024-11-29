@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import reduce_functions as rf
+import mdtraj as md
 
 print("""
 ********************************************************************************
@@ -43,17 +44,23 @@ print(f'Number of trajectories: {len(jobs)}')
 
 # Get TS indices ===============================================================
 qmmm_type = 'smd'
+traj = md.load(f'{jobs[0]}/traj_{args.sufix}.nc', top=f'{jobs[0]}/top_{args.sufix}.parm7')
+nframes = traj.n_frames
+del traj
 
 if qmmm_type == 'smd':
     ts_indices = np.zeros(len(jobs), dtype=np.int16)
     for job_idx, job in enumerate(jobs):
-        ts_index = rf.indentify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
-        # TODO: Check this part (index in txt vs number of frames in the traj)
-        if ts_index % 2 == 1:
-            ts_index = int(ts_index/2 + 0.5)
+        ts_index, work_lines = rf.indentify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
+        factor = int(work_lines/nframes)
+        if ts_index % factor != 0:
+            ts_index = int(ts_index//factor + 1)
         else:
-            ts_index = int(ts_index/2)
-        ts_indices[job_idx] =  ts_index
+            ts_index = int(ts_index//factor)
+        ts_indices[job_idx] = ts_index
+    with open(f'{args.output}/ts_indexes.dat', 'w') as f:
+        for job, ts in zip(jobs, ts_indices):
+            f.write(f'{job},{ts_index}\n')
 # ==============================================================================
 
 # Calculate matrices ===========================================================
