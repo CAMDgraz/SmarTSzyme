@@ -32,6 +32,7 @@ catalytic_residues = np.asarray(args.catalytic_residues, dtype=int) - 1
 
 import os
 import sys
+import shutil
 if args.output == './':
     print('Output path can not be ./')
     sys.exit()
@@ -40,7 +41,7 @@ try:
     os.mkdir(f'{args.output}/matrices/')
 except FileExistsError:
     if args.force:
-        os.rmdir(args.output)
+        shutil.rmtree(args.output, ignore_errors=True)
     else:
         raise FileExistsError
 # ==============================================================================
