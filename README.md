@@ -29,7 +29,7 @@ top_<suffix>.parm7
 traj_<suffix>.nc
 smd_<suffix>.txt
 ```
-Modify the script according to your systems deleting everything but the protein, substrate and cofactor if any.
+Modify the script according to your systems deleting everything but the protein, substrate and cofactor if any. Please make sure that a single txt file (the one resulting from the sMD) is present in the paths. 
 
 ## Basic Usage
 You can display the help of **SmarTSzyme** in the command-line as follows:
