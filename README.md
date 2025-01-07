@@ -14,13 +14,22 @@ conda env create -f environment.yml
 conda activate smartszyme_env
 ```
 
-## Preparation of the steered Molecular Dynamics files
-**SmarTSzyme** requires a pre-process of the input files (topologies, trajectories and steered MD output). All of them need to have the following structure:
+## Preparing the steered Molecular Dynamics files
+For preparing the steered Molecular Dynamics files we provide a bash script (./2_reduce/prep_smd.sh) that can be use as follows:
+```bash
+./2_reduce/prep_smd.sh <joblist> <topext> <trajext> <suffix>
+# <joblist> => file with the path to the qmmm folders (an example can be found in ./example/)
+# <topext> => extension of the topology file (by default the script is gonna load the file matching *.<topext>)
+# <trajext> => extension of the trajectory file (by default the script is gonna load the file matching *.qmmm.<trajext>)
+# <suffix> => suffix for the output files (top_<suffix>.parm7, traj_<suffix>.nc and smd_<suffix>.txt)
+```
+The script will remove the waters, Na+ and Cl- and create the input files for reduce.py with the following structure:
 ```bash
 top_<suffix>.parm7
 traj_<suffix>.nc
 smd_<suffix>.txt
 ```
+Modify the script according to your systems deleting everything but the protein, substrate and cofactor if any.
 
 ## Basic Usage
 You can display the help of **SmarTSzyme** in the command-line as follows:
@@ -67,6 +76,9 @@ python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 1
 ## License
 **SmarTSzyme** is licensed under GNU General Public License v3.0.
 
+## Citation
+The corresponding publication is under preparation
+
 ## Contact
 **Computed-Aided Molecular Design**
 
@@ -77,4 +89,4 @@ A-8010 Graz, Austria
 
 Head of the Group: Ass.-Prof. Dr. Pedro A. Sánchez Murcia
  
-In case of questions and/or suggestions you can contact us at: pedro.murcia@medunigraz.at and  daniel.platero-rochart@medunigraz.at
+In case of questions and/or suggestions you can contact us at: pedro.murcia@medunigraz.at and daniel.platero-rochart@medunigraz.at
