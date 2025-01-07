@@ -51,9 +51,13 @@ def parse_arguments():
                           in the pairwise interactions (in A)''')
     inputs.add_argument('-ncpus', dest='ncpus', required=False, default=1,
                         type=int, help='Number of CPUs to use [default: 1]')
+    inputs.add_argument('-f', dest='force', action='store',
+                        help='Delete output folder if it exist',
+                        required=False, default=False, type=bool)
     outputs = parser.add_argument_group(title='Output options')
     outputs.add_argument('-out', dest='output', action='store', type=str,
-                      required=True, help='prefix for the outputs')
+                      required=False, help='Output path (different from ./)',
+                      default='./out')
     user_inputs = parser.parse_args()
     return user_inputs
 

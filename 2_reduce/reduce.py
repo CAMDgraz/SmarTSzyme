@@ -31,8 +31,18 @@ args = rf.parse_arguments()
 catalytic_residues = np.asarray(args.catalytic_residues, dtype=int) - 1
 
 import os
-os.mkdir(args.output)
-os.mkdir(f'{args.output}/matrices/')
+import sys
+if args.output == './':
+    print('Output path can not be ./')
+    sys.exit()
+try:
+    os.mkdir(args.output)
+    os.mkdir(f'{args.output}/matrices/')
+except FileExistsError:
+    if args.force:
+        os.rmdir(args.output)
+    else:
+        raise FileExistsError
 # ==============================================================================
 
 # Read list of qmmm jobs =======================================================
