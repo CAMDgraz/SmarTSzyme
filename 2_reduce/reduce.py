@@ -42,6 +42,8 @@ try:
 except FileExistsError:
     if args.force:
         shutil.rmtree(args.output, ignore_errors=True)
+        os.mkdir(args.output)
+        os.mkdir(f'{args.output}/matrices/')
     else:
         raise FileExistsError
 # ==============================================================================
