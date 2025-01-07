@@ -19,9 +19,9 @@ For preparing the steered Molecular Dynamics files we provide a bash script (./2
 ```bash
 ./2_reduce/prep_smd.sh <joblist> <topext> <trajext> <suffix>
 # <joblist> => file with the path to the qmmm folders (an example can be found in ./example/)
-# <topext> => extension of the topology file (by default the script is gonna load the file matching *.<topext>)
+# <topext>  => extension of the topology file (by default the script is gonna load the file matching *.<topext>)
 # <trajext> => extension of the trajectory file (by default the script is gonna load the file matching *.qmmm.<trajext>)
-# <suffix> => suffix for the output files (top_<suffix>.parm7, traj_<suffix>.nc and smd_<suffix>.txt)
+# <suffix>  => suffix for the output files (top_<suffix>.parm7, traj_<suffix>.nc and smd_<suffix>.txt)
 ```
 The script will remove the waters, Na+ and Cl- and create the input files for reduce.py with the following structure:
 ```bash
