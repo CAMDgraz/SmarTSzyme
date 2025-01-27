@@ -105,7 +105,7 @@ def pairwise_distance(atom1, atom2, coord):
     distance = (distance_.sum(axis=2)**(1/2)).flatten()
     return distance
 
-def indentify_smd_TS(work_file):
+def identify_smd_TS(work_file):
     """
     Finds maximum in the pulling work of a smd job.
 

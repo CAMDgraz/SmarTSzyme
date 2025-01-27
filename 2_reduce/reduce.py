@@ -64,7 +64,7 @@ del traj
 if qmmm_type == 'smd':
     ts_indices = np.zeros(len(jobs), dtype=np.int16)
     for job_idx, job in enumerate(jobs):
-        ts_index, work_lines = rf.indentify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
+        ts_index, work_lines = rf.identify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
         factor = int(work_lines/nframes)
         if ts_index % factor != 0:
             ts_index = int(ts_index//factor + 1)
@@ -108,7 +108,8 @@ for interaction in interactions:
     arg4 = [args.cutoff/10 for i in range(len(jobs))]
     with mp.Pool(processes=args.ncpus) as pool:
         results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
-                                                         arg4, ts_indices))
+                                                         arg4, ts_indices-1))
+        # -1 to math the 0-based index
     for result in results:
         matrix_int += result
     del results # clean memory
