@@ -124,7 +124,7 @@ def compute_hbonds(traj, top_info, cutoff):
                                                  == 7)[0],
                                         np.where(atomic_numbers[bonds_wo_H - 1]
                                                  == 8)[0]))
-    acceptors = bonds_wo_H[no_acceptor_index]
+    acceptors = np.concatenate((bonds_wo_H[no_acceptor_index], donors))
     x_index = no_acceptor_index + (-1)**(no_acceptor_index%2)
     x_atoms = bonds_wo_H[x_index]    
     # Get coordinates
@@ -169,13 +169,25 @@ def compute_hbonds(traj, top_info, cutoff):
             donors_repeated = np.repeat(donors_res12, len(acceptors_res12))
             acceptors_tiled = np.tile(acceptors_res12, len(hydrogens_res12))
             x_repeated = np.repeat(x_atoms_res12, len(hydrogens_res12))
-            # Eliminate possibility of same atom for donor and acceptor
-            to_delete = np.where((acceptors_tiled == donors_repeated)
-                                 == True)[0]
+            # Delete H and acceptors in the same residue
+            to_delete = []
+            for hyd_idx in range(len(hydrogens_repeated)):
+                hyd, don = hydrogens_repeated[hyd_idx], acceptors_tiled[hyd_idx] 
+                if hyd - 1 in atoms1 and don - 1 in atoms1:
+                    to_delete.append(hyd_idx)
+                elif hyd - 1 in atoms2 and don - 1 in atoms2:
+                    to_delete.append(hyd_idx)
             hydrogens_repeated = np.delete(hydrogens_repeated, to_delete)
             donors_repeated = np.delete(donors_repeated, to_delete)
             acceptors_tiled = np.delete(acceptors_tiled, to_delete)
             x_repeated = np.delete(x_repeated, to_delete)
+            # Eliminate possibility of same atom for donor and acceptor
+            #to_delete = np.where((acceptors_tiled == donors_repeated)
+            #                     == True)[0]
+            #hydrogens_repeated = np.delete(hydrogens_repeated, to_delete)
+            #donors_repeated = np.delete(donors_repeated, to_delete)
+            #acceptors_tiled = np.delete(acceptors_tiled, to_delete)
+            #x_repeated = np.delete(x_repeated, to_delete)
             # Calculate relevant distances 
             acceptor_hydrogen = rf.pairwise_distance(hydrogens_repeated - 1,
                                           acceptors_tiled - 1, coord)
