@@ -35,7 +35,7 @@ def compute_vdw(traj, top_info, cutoff):
         atoms1 = traj.topology.select(f'resid {residue1}')
         to_delete = []
         for atom_id, atom in enumerate(atoms1):
-            if names[atom] in ['C', 'N', 'O', 'CA']:
+            if names[atom] in ['C', 'N', 'O', 'CA', 'H', 'HA']:
                 to_delete.append(atom_id)
         atoms1 = np.delete(atoms1, to_delete)
 
@@ -49,7 +49,7 @@ def compute_vdw(traj, top_info, cutoff):
             atoms2 = traj.topology.select(f'resid {residue2}')
             to_delete = []
             for atom_id, atom in enumerate(atoms2):
-                if names[atom] in ['C', 'N', 'O', 'CA']:
+                if names[atom] in ['C', 'N', 'O', 'CA', 'H', 'HA']:
                     to_delete.append(atom_id)
             atoms2 = np.delete(atoms2, to_delete)
 
@@ -148,7 +148,7 @@ def compute_hbonds(traj, top_info, cutoff):
         atoms1 = traj.topology.select(f'resid {residue1}')
         to_delete = []
         for atom_id, atom in enumerate(atoms1):
-            if names[atom] in ['C', 'N', 'O', 'CA']:
+            if names[atom] in ['C', 'N', 'O', 'CA', 'H', 'HA']:
                 to_delete.append(atom_id)
         atoms1 = np.delete(atoms1, to_delete)
 
@@ -170,7 +170,7 @@ def compute_hbonds(traj, top_info, cutoff):
             atoms2 = traj.topology.select(f'resid {residue2}')
             to_delete = []
             for atom_id, atom in enumerate(atoms2):
-                if names[atom] in ['C', 'N', 'O', 'CA']:
+                if names[atom] in ['C', 'N', 'O', 'CA', 'H', 'HA']:
                     to_delete.append(atom_id)
             atoms2 = np.delete(atoms2, to_delete)
 
@@ -300,7 +300,7 @@ def compute_coulomb(traj, top_info, cutoff):
         atoms1 = traj.topology.select(f'resid {residue1}')
         to_delete = []
         for atom_id, atom in enumerate(atoms1):
-            if names[atom] in ['C', 'N', 'O', 'CA']:
+            if names[atom] in ['C', 'N', 'O', 'CA', 'H', 'HA']:
                 to_delete.append(atom_id)
         atoms1 = np.delete(atoms1, to_delete)
         frame_tree = kdtree(coord)
@@ -313,7 +313,7 @@ def compute_coulomb(traj, top_info, cutoff):
             atoms2 = traj.topology.select(f'resid {residue2}')
             to_delete = []
             for atom_id, atom in enumerate(atoms2):
-                if names[atom] in ['C', 'N', 'O', 'CA']:
+                if names[atom] in ['C', 'N', 'O', 'CA', 'H', 'HA']:
                     to_delete.append(atom_id)
             atoms2 = np.delete(atoms2, to_delete)
             atoms1_repeated = np.repeat(atoms1, len(atoms2))
