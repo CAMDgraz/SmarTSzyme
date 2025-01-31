@@ -27,12 +27,18 @@ def compute_vdw(traj, top_info, cutoff):
     nonbonded_index = np.asarray(top_info['NONBONDED_PARM_INDEX'])
     ntypes = top_info['POINTERS'][1]
     residue_pointer = np.asarray(top_info['RESIDUE_POINTER']) - 1
-
+    names = np.asarray(top_info['ATOM_NAME'])
     coord = traj.xyz[0]
     van_der_Waals = np.zeros((traj.n_residues, traj.n_residues))
 
     for residue1 in range(traj.n_residues):
         atoms1 = traj.topology.select(f'resid {residue1}')
+        to_delete = []
+        for atom_id, atom in enumerate(atoms1):
+            if names[atom] in ['C', 'N', 'O', 'CA']:
+                to_delete.append(atom_id)
+        atoms1 = np.delete(atoms1, to_delete)
+
         frame_tree = kdtree(coord)
         in_cutoff = np.concatenate(frame_tree.query_radius(coord[atoms1],
                                                            r=cutoff))
@@ -41,6 +47,11 @@ def compute_vdw(traj, top_info, cutoff):
         neighbors = np.unique(np.asarray(neighbors))
         for residue2 in neighbors[np.where(neighbors > residue1)[0]]:
             atoms2 = traj.topology.select(f'resid {residue2}')
+            to_delete = []
+            for atom_id, atom in enumerate(atoms2):
+                if names[atom] in ['C', 'N', 'O', 'CA']:
+                    to_delete.append(atom_id)
+            atoms2 = np.delete(atoms2, to_delete)
 
             atoms1_repeated = np.repeat(atoms1, len(atoms2))
             atoms2_tiled = np.tile(atoms2, len(atoms1))
@@ -105,6 +116,7 @@ def compute_hbonds(traj, top_info, cutoff):
     charges = np.asarray(top_info['CHARGE'])
     charges /= 18.2223
     charges = np.round(charges)
+    names = np.asarray(top_info['ATOM_NAME'])
     # Get Hydrogen atoms and donors
     bonds_w_H = np.asarray(top_info['BONDS_INC_HYDROGEN'])
     bonds_w_H = np.delete(bonds_w_H, np.arange(2, len(bonds_w_H), 3))
@@ -134,6 +146,12 @@ def compute_hbonds(traj, top_info, cutoff):
     hbonds_matrix = np.zeros((traj.n_residues, traj.n_residues))
     for residue1 in range(traj.n_residues):
         atoms1 = traj.topology.select(f'resid {residue1}')
+        to_delete = []
+        for atom_id, atom in enumerate(atoms1):
+            if names[atom] in ['C', 'N', 'O', 'CA']:
+                to_delete.append(atom_id)
+        atoms1 = np.delete(atoms1, to_delete)
+
         frame_tree = kdtree(coord)
         in_cutoff = np.concatenate(frame_tree.query_radius(coord[atoms1], r=1))
         neighbors = [np.where(residue_pointer <= atom)[0][-1]
@@ -150,6 +168,12 @@ def compute_hbonds(traj, top_info, cutoff):
 
         for residue2 in neighbors[np.where(neighbors > residue1)[0]]:
             atoms2 = traj.topology.select(f'resid {residue2}')
+            to_delete = []
+            for atom_id, atom in enumerate(atoms2):
+                if names[atom] in ['C', 'N', 'O', 'CA']:
+                    to_delete.append(atom_id)
+            atoms2 = np.delete(atoms2, to_delete)
+
             # Hydrogens and donors in res1
             h2_info = np.intersect1d(atoms2 + 1, hydrogens, return_indices=True)
             hydrogens_res2 = h2_info[0].astype(np.int32)
@@ -265,6 +289,7 @@ def compute_coulomb(traj, top_info, cutoff):
     excluded_atoms = np.asarray(top_info['EXCLUDED_ATOMS_LIST'])
     residue_pointer = np.asarray(top_info['RESIDUE_POINTER']) - 1
     charges = np.asarray(top_info['CHARGE'])
+    names = np.asarray(top_info['ATOM_NAME'])
     charges /= 18.2223
     coulomb_constant = 322
     max_dist = 5.5
@@ -273,6 +298,11 @@ def compute_coulomb(traj, top_info, cutoff):
     coulomb_matrix = np.zeros((traj.n_residues, traj.n_residues))
     for residue1 in range(traj.n_residues):
         atoms1 = traj.topology.select(f'resid {residue1}')
+        to_delete = []
+        for atom_id, atom in enumerate(atoms1):
+            if names[atom] in ['C', 'N', 'O', 'CA']:
+                to_delete.append(atom_id)
+        atoms1 = np.delete(atoms1, to_delete)
         frame_tree = kdtree(coord)
         in_cutoff = np.concatenate(frame_tree.query_radius(coord[atoms1],
                                                            r=cutoff))
@@ -281,7 +311,11 @@ def compute_coulomb(traj, top_info, cutoff):
         neighbors = np.unique(np.asarray(neighbors))
         for residue2 in neighbors[np.where(neighbors > residue1)[0]]:
             atoms2 = traj.topology.select(f'resid {residue2}')
-
+            to_delete = []
+            for atom_id, atom in enumerate(atoms2):
+                if names[atom] in ['C', 'N', 'O', 'CA']:
+                    to_delete.append(atom_id)
+            atoms2 = np.delete(atoms2, to_delete)
             atoms1_repeated = np.repeat(atoms1, len(atoms2))
             atoms2_tiled = np.tile(atoms2, len(atoms1))
             coulomb_atoms1 = np.zeros(len(atoms1_repeated))
@@ -307,11 +341,10 @@ def compute_coulomb(traj, top_info, cutoff):
                     # Calculate vdW
                     if r > max_dist:
                         coulomb_atoms1[atom_id] = 0
+                    elif r < 1.45:
+                        coulomb_ = (coulomb_constant*charges[atom_i]*charges[atom_j])/(1.45*4)
                     else:
-                        dij = (1/np.square(r)) - (1/np.square(max_dist))
-                        g_diel = (1 + dij/4 + (np.square(dij/4)/2))*np.exp(-dij/4)
-                        dielectric = g_diel*6 + (1 - g_diel)*80
-                        coulomb_ = (coulomb_constant*charges[atom_i]*charges[atom_j])/(r*dielectric)
+                        coulomb_ = (coulomb_constant*charges[atom_i]*charges[atom_j])/(r*4)
                     coulomb_atoms1[atom_id] = coulomb_
                 atom_id += 1
 
