@@ -73,7 +73,7 @@ if qmmm_type == 'smd':
         ts_indices[job_idx] = ts_index
     with open(f'{args.output}/ts_indexes.dat', 'w') as f:
         for job, ts in zip(jobs, ts_indices):
-            f.write(f'{job},{ts_index}\n')
+            f.write(f'{job},{ts}\n')
 # ==============================================================================
 
 # Calculate matrices ===========================================================
