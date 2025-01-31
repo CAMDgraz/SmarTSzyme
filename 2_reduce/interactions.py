@@ -136,7 +136,7 @@ def compute_hbonds(traj, top_info, cutoff):
                                                  == 7)[0],
                                         np.where(atomic_numbers[bonds_wo_H - 1]
                                                  == 8)[0]))
-    acceptors bonds_wo_H[no_acceptor_index]
+    acceptors = bonds_wo_H[no_acceptor_index]
     x_index = no_acceptor_index + (-1)**(no_acceptor_index%2)
     x_atoms = bonds_wo_H[x_index]    
     # Get coordinates
