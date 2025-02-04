@@ -33,14 +33,14 @@ conda activate smartszyme_env
 ## 1. SIMULA: simulation of the catalyzed reaction mechanism with the desired substrate ##
 xxx
 ## 2. REDUCE: identification of the positions for protein engineering
-In this step the steered MD simulations can be analyzed within *SmarTSzyme*. In a first step, the input data need to be prepared for REDUCE with the script prep_smd.sh:
+In this step the steered MD simulations can be analyzed within *SmarTSzyme*. In a first step, the input data (sMD trajectory, topology file, and work profile printed along the trajectory) need to be prepared for REDUCE with the script prep_smd.sh:
 
 ```bash
 ./2_reduce/prep_smd.sh <joblist> <topext> <trajext> <suffix>
-# <joblist> => file with the path to the qmmm folders (an example can be found in ./example/)
-# <topext>  => extension of the topology file (by default the script is gonna load the file matching *.<topext>)
-# <trajext> => extension of the trajectory file (by default the script is gonna load the file matching *.qmmm.<trajext>)
-# <suffix>  => suffix for the output files (top_<suffix>.parm7, traj_<suffix>.nc and smd_<suffix>.txt)
+# <joblist> => file with the path to the qmmm folders (i.e., ./example) An example can be found in this folder)
+# <topext>  => extension of the topology file (i.e., parm7,prmtop, top, pdb, ...). By default the script is gonna load the file matching *.<topext>)
+# <trajext> => extension of the trajectory file (i.e., nc, traj, dcd, ...) By default the script is gonna load the file matching *.qmmm.<trajext>)
+# <suffix>  => suffix or label for the the sMD files (top_<suffix>.parm7, traj_<suffix>.nc and smd_<suffix>.txt)
 ```
 The script will remove the waters, Na+ and Cl- and create the input files for reduce.py with the following structure:
 ```bash
