@@ -8,14 +8,18 @@
 2. REDUCE, by the analysis of the formed trajectories, **SmarTSzyme** delivers a list of residues within a defined cut-off of residues that stabilize and destabilize the ETS with respect ES.
 3. SATURA, for the saturation of the selected positions by different methods to yield a short list of variant to text in the laboratory.
 
-
+**SmarTSzyme** runs on the terminal but we have also developed a graphical user interface (GUI) to be used in PyMOL.
 
 ## Installation
 ### SmarTSzyme
-To run **SmarTSzyme**,
+To install **SmarTSzyme** into your computer, clone the code from this repository:
+
+1. Get the code from this repository:
 ```bash
 git clone https://github.com/CAMDGraz/SmarTSzyme.git
 ```
+
+2. We recommend to work within a conda environment (smartszyme_env):
 ```bash
 cd /path/to/SmarTSzyme
 conda env create -f environment.yml
