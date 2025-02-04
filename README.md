@@ -25,6 +25,11 @@ cd /path/to/SmarTSzyme
 conda env create -f environment.yml
 conda activate smartszyme_env
 ```
+Remember to load the environment smartszyme_env every time you open a new terminal:
+
+```bash
+conda activate smartszyme_env
+```
 
 ## Preparing the steered Molecular Dynamics files
 For preparing the steered Molecular Dynamics files we provide a bash script (./2_reduce/prep_smd.sh) that can be use as follows:
