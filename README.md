@@ -11,7 +11,6 @@
 *SmarTSzyme* runs on the terminal but we have also developed a graphical user interface (GUI) to be used in PyMOL. You can download the code here. To learn more about *SmarTSzyme*, please visit the seminal manuscript. 
 
 ## Installation
-### SmarTSzyme
 To install **SmarTSzyme** into your computer, clone the code from this repository:
 
 1. Get the code from this repository:
