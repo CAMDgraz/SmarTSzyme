@@ -8,7 +8,7 @@
 2. REDUCE, by the analysis of the formed trajectories, *SmarTSzyme* delivers a list of residues within a defined cut-off of residues that stabilize and destabilize the ETS with respect ES.
 3. SATURA, for the saturation of the selected positions by different methods to yield a short list of variant to text in the laboratory.
 
-*SmarTSzyme* runs on the terminal but we have also developed a graphical user interface (GUI) to be used in PyMOL. To learn more about *SmarTSzyme*, please visit the seminal manuscript. 
+*SmarTSzyme* runs on the terminal but we have also developed a graphical user interface (GUI) to be used in PyMOL. You can download the code here. To learn more about *SmarTSzyme*, please visit the seminal manuscript. 
 
 ## Installation
 ### SmarTSzyme
@@ -30,9 +30,11 @@ Remember to load the environment smartszyme_env every time you open a new termin
 ```bash
 conda activate smartszyme_env
 ```
+## 1. SIMULA: simulation of the catalyzed reaction mechanism with the desired substrate ##
+xxx
+## 2. REDUCE: identification of the positions for protein engineering
+In this step the steered MD simulations can be analyzed within *SmarTSzyme*. In a first step, the input data need to be prepared for REDUCE with the script prep_smd.sh:
 
-## Preparing the steered Molecular Dynamics files
-For preparing the steered Molecular Dynamics files we provide a bash script (./2_reduce/prep_smd.sh) that can be use as follows:
 ```bash
 ./2_reduce/prep_smd.sh <joblist> <topext> <trajext> <suffix>
 # <joblist> => file with the path to the qmmm folders (an example can be found in ./example/)
