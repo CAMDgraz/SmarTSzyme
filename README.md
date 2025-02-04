@@ -32,6 +32,7 @@ conda activate smartszyme_env
 ## 1. SIMULA: simulation of the catalyzed reaction mechanism with the desired substrate ##
 xxx
 ## 2. REDUCE: identification of the positions for protein engineering
+## 2.1. Preparation of input files
 In this step the steered MD simulations can be analyzed within *SmarTSzyme*. In a first step, the input data (sMD trajectory, topology file, and work profile printed along the trajectory) need to be prepared for REDUCE with the script prep_smd.sh:
 
 ```bash
@@ -49,8 +50,9 @@ smd_<suffix>.txt
 ```
 Modify the script according to your systems deleting everything but the protein, substrate and cofactor if any. Please make sure that a single txt file (the one resulting from the sMD) is present in the paths. 
 
-## Basic Usage
-You can display the help of **SmarTSzyme** in the command-line as follows:
+## 2.2. Analysis of QM/MM trajectories
+It is recommended to analyze simultaneously several QM/MM trajectories to get significant results. For each of the analyzed trajectories, one folder is needed. To execute REDUCE, move to the folder containing all trajectory folders and execute:
+
 ```bash
 python 2_reduce/reduce.py -h
 
@@ -73,9 +75,9 @@ options:
 Input options:
   -qmmm_list QMMM_LIST  List of QMMM jobs to analyze.
   -sufix SUFIX          Sufix for the top_, traj_ and smd_ files
-  -nres NRESIDUES       Number of residues
+  -nres NRESIDUES       Size of the solute (enzyme + substrate + cofactor)
   -cr CATALYTIC_RESIDUES [CATALYTIC_RESIDUES ...]
-                        Catalytic residues
+                        Specify the catalytic residues of the reaction. They will be excluded from the short list of residues.
   -cutoff CUTOFF        Maximum distance between residues to be
                         consider in the pairwise interactions (in
                         A)
