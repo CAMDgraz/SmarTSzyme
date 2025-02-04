@@ -41,7 +41,7 @@ In this step the steered MD simulations can be analyzed within *SmarTSzyme*. In 
 # <trajext> => extension of the trajectory file (i.e., nc, traj, dcd, ...) By default the script is gonna load the file matching *.qmmm.<trajext>)
 # <suffix>  => suffix or label for the the sMD files (top_<suffix>.parm7, traj_<suffix>.nc and smd_<suffix>.txt)
 ```
-The script will remove the waters, Na+ and Cl- and create the input files for reduce.py with the following structure:
+In this first step, the script prep_smd.sh will remove solvent molecules (i.e., water molecules) and counter ions (i.e., Na+, Cl-) from both trajectory and topology files. Only the solute residues are kept for the step of SIMULA. If one water molecule needs to be included into the reaction mechanism, xxx. As outcome, three output files will be generated:
 ```bash
 top_<suffix>.parm7
 traj_<suffix>.nc
