@@ -4,7 +4,9 @@
 
 **SmarTSzyme** consist of three modules:
 
-1. SIMULA, for the preparation and simulation of the catalyzed reaction using QM/MM MD simulations (
+1. SIMULA, for the preparation and simulation of the catalyzed reaction by means of QM/MM molecular dynamics (MD) trajectories. Using the chemical intiution, the user can define collective variables to yield the desired product.
+2. REDUCE, by the analysis of the formed trajectories, **SmarTSzyme** delivers a list of residues within a defined cut-off of residues that stabilize and destabilize the ETS with respect ES.
+3. SATURA, for the saturation of the selected positions using different methods: changes on free energy changes (\DeltaDDG)
 
 ## Installation
 ### SmarTSzyme
