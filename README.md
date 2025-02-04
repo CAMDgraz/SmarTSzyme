@@ -1,7 +1,10 @@
 # SmarTSzyme
 ![alt text](./cover_temp2.png)
-**SmarTSzyme** is a command-line interface (CLI) for the selection of key residues to manipulate enzyme activity for the (re-)design of enzymes. By simulating the reaction mechanism of the desired enzyme activity at the active site of the target enzyme, **SmarTSzyme** searches for those residues that (de)stabilize the enzyme/transition state (ETS) complex with respect to the enzyme substrate (ES) complex. By biasing the mutational landscape, **SmarTSzyme** guides the manipulation of enzyme activity paying attention to the catalytic mechanism in atomic detail, saving time and reducing the cost in protein engineering campaigns. \\
+**SmarTSzyme** is a command-line interface (CLI) designed for selecting key residues to manipulate enzyme activity in the (re)design of enzymes. By simulating the reaction mechanism of the desired enzyme activity at the active site of the target enzyme using quantum mechanics/molecular mechanics (QM/MM) methods, **SmarTSzyme** identifies residues that (de)stabilize the enzyme-transition state (ETS) complex relative to the enzyme-substrate (ES) complex. By guiding the mutational landscape, SmarTSzyme facilitates enzyme activity manipulation with atomic-level attention to the catalytic mechanism, ultimately saving time and reducing costs in protein engineering campaigns.
 
+**SmarTSzyme** consist of three modules:
+
+1. SIMULA, for the preparation and simulation of the catalyzed reaction using QM/MM MD simulations (
 
 ## Installation
 ### SmarTSzyme
