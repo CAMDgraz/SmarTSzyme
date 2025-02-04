@@ -92,9 +92,10 @@ python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 1
 The corresponding publication is under preparation
 
 ## Contact
-**Computed-Aided Molecular Design**
+**Laboratory of Computed-Aided Molecular Design Graz**
 
 Division of Medicinal Chemistry\
+Otto-Loewi Research Center\
 Medical University of Graz\
 Neue Stiftingstalstraße 6/III\
 A-8010 Graz, Austria
