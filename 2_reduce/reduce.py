@@ -18,6 +18,9 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 import reduce_functions as rf
 import mdtraj as md
+import os
+import sys
+import shutil
 
 print("""
 ********************************************************************************
@@ -30,9 +33,6 @@ print("""
 args = rf.parse_arguments()
 catalytic_residues = np.asarray(args.catalytic_residues, dtype=int) - 1
 
-import os
-import sys
-import shutil
 if args.output == './':
     print('Output path can not be ./')
     sys.exit()
@@ -52,7 +52,7 @@ except FileExistsError:
 print(f'\nReading QMMM jobs from: {args.qmmm_list}')
 jobs_df = pd.read_csv(args.qmmm_list, header=None)
 jobs = np.asarray(jobs_df.iloc[:, 0])
-print(f'Number of trajectories: {len(jobs)}')
+print(f'Number of trajectories: {len(jobs)}\n')
 # ==============================================================================
 
 # Get TS indices ===============================================================
@@ -80,9 +80,9 @@ if qmmm_type == 'smd':
 interactions = ['vdw', 'hbonds', 'coulomb']
 
 # Parallel calculation
-print(f'Calculating interactions for Enzyme-Substrate complex:')
+print(f'*** Calculating interactions for Enzyme-Substrate complex ***')
 for interaction in interactions:
-    print(f'    * calculating {interaction}')
+    print(f'    - calculating {interaction}')
     matrix_int = np.zeros((args.nresidues, args.nresidues))
     arg1 = [interaction for i in range(len(jobs))]
     arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
@@ -93,14 +93,15 @@ for interaction in interactions:
                                                               arg4))
     for result in results:
         matrix_int += result
+    matrix_int /= len(jobs)
     del results # clean memory
     rf.write_pickle(matrix_int,
                     f'{args.output}/matrices/{interaction}_es.pickle')
 del matrix_int
 
-print(f'Calculating interactions for (pseudo) Transition State complex:')
+print(f'*** Calculating interactions for (pseudo) Transition State complex ***')
 for interaction in interactions:
-    print(f'    * calculating {interaction}')
+    print(f'    - calculating {interaction}')
     matrix_int = np.zeros((args.nresidues, args.nresidues))
     arg1 = [interaction for i in range(len(jobs))]
     arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
@@ -112,6 +113,7 @@ for interaction in interactions:
         # -1 to math the 0-based index
     for result in results:
         matrix_int += result
+    matrix_int /= len(jobs)
     del results # clean memory
     rf.write_pickle(matrix_int,
                     f'{args.output}/matrices/{interaction}_pts.pickle')
@@ -119,18 +121,15 @@ del matrix_int
 # ==============================================================================
 
 # Read matrices one by one =====================================================
-print(f'\nReading matrices ...')
 matrix_es = np.zeros((args.nresidues, args.nresidues))
-for interaction in ['vdw', 'hbonds', 'coulomb']:
+for interaction in interactions:
     matrix_es += rf.load_pickle(
                             f'{args.output}/matrices/{interaction}_es.pickle')
-matrix_es /= len(jobs)
 
 matrix_pts = np.zeros((args.nresidues, args.nresidues))
-for interaction in ['vdw', 'hbonds', 'coulomb']:
+for interaction in interactions:
     matrix_pts += rf.load_pickle(
                             f'{args.output}/matrices/{interaction}_pts.pickle')
-matrix_pts /= len(jobs)
 # ==============================================================================
 
 # Separate contributions =======================================================
@@ -138,100 +137,54 @@ matrix_diff = matrix_pts - matrix_es
 del matrix_pts
 del matrix_es
 
-stabilizing = np.copy(matrix_diff)
-stabilizing[np.where(stabilizing > 0)] = 0
-stabilizing[catalytic_residues] = matrix_diff[catalytic_residues]
-stabilizing.T[catalytic_residues] = matrix_diff.T[catalytic_residues]
+# Calculate edge to edge propensity ============================================
+print(f'*** Calculating edge to edge ***')
 
-destabilizing = np.copy(matrix_diff)
-destabilizing[np.where(destabilizing < 0)] = 0
-destabilizing[catalytic_residues] = matrix_diff[catalytic_residues]
-destabilizing.T[catalytic_residues] = matrix_diff.T[catalytic_residues]
-# ==============================================================================
-
-# Calculate edge-to-edge propensity ============================================
-print('\nCalculating edge_to_edge for stabilizing residues ...')
 edges_catal = np.asarray([])
 for catalytic_residue in catalytic_residues:
     edges_catal = np.concatenate((edges_catal,
-                                  np.where(stabilizing.nonzero()[0] ==
+                                  np.where(matrix_diff.nonzero()[0] ==
                                           catalytic_residue)[0]))
-edge_to_edge = rf.edge_transfer_matrix(stabilizing, args.nresidues)
+edge_to_edge = rf.edge_transfer_matrix(matrix_diff, args.nresidues)
 for diag in range(edge_to_edge.shape[0]):
     edge_to_edge[diag][diag] = 0
 
-flux_stabilizing = np.zeros(args.nresidues)
+flux = np.zeros(args.nresidues)
 for residue in range(args.nresidues):
     if residue in catalytic_residues:
         continue
-    edges_residue = np.where(stabilizing.nonzero()[0] == residue)[0]
-    edges_residue_repeat = np.repeat(edges_residue, len(edges_catal))
-    edges_residue_repeat = edges_residue_repeat.astype(np.int16)
-    edges_catal_tile = np.tile(edges_catal, len(edges_residue))
-    edges_catal_tile = edges_catal_tile.astype(np.int16)
-    flux_stabilizing[residue] = np.sum(abs(edge_to_edge[edges_residue_repeat,
-                                                        edges_catal_tile]))
-
-# Normalize fluxes and write results
-flux_stabilizing /= np.sum(flux_stabilizing)
-rf.write_pickle(flux_stabilizing, f'{args.output}/flux_stabilizing.pickle')
-
-print('Calculating edge_to_edge for destabilizing residues ...')
-edges_catal = np.asarray([])
-for catalytic_residue in catalytic_residues:
-    edges_catal = np.concatenate((edges_catal,
-                                  np.where(destabilizing.nonzero()[0] ==
-                                          catalytic_residue)[0]))
-edge_to_edge = rf.edge_transfer_matrix(destabilizing, args.nresidues)
-for diag in range(edge_to_edge.shape[0]):
-    edge_to_edge[diag][diag] = 0
-
-
-flux_destabilizing = np.zeros(args.nresidues)
-for residue in range(args.nresidues):
-    if residue in catalytic_residues:
-        continue
-    edges_residue = np.where(destabilizing.nonzero()[0] == residue)[0]
+    edges_residue = np.where(matrix_diff.nonzero()[0] == residue)[0]
     edges_catal_tile = np.tile(edges_catal, len(edges_residue))
     edges_catal_tile = edges_catal_tile.astype(np.int16)
     edges_residue_repeat = np.repeat(edges_residue, len(edges_catal))
     edges_residue_repeat = edges_residue_repeat.astype(np.int16)
-    flux_destabilizing[residue] = np.sum(abs(edge_to_edge[edges_residue_repeat,
+    flux[residue] = np.sum(abs(edge_to_edge[edges_residue_repeat,
                                                           edges_catal_tile]))
+del edge_to_edge
 
-# Normalize fluxes and write results
-flux_destabilizing /= np.sum(flux_destabilizing)
-rf.write_pickle(flux_destabilizing, f'{args.output}/flux_destabilizing.pickle')
-# ==============================================================================
+# separate stab from destab ====================================================
+total_contribution = matrix_diff.sum(axis=1)
+stab_index = np.where(total_contribution < 0)[0]
+destab_index = np.where(total_contribution > 0)[0]
 
-# Plot and save results ========================================================
-flux_total = flux_destabilizing - flux_stabilizing
+flux_stab = flux[stab_index]
+flux_destab = flux[destab_index]
 
-del flux_destabilizing
-del flux_stabilizing
-
-flux_positive = np.copy(flux_total)
-flux_positive[np.where(flux_positive < 0)[0]] = 0
-
-flux_negative = np.copy(flux_total)
-flux_negative[np.where(flux_negative > 0)[0]] = 0
-
-# Write results to csv
+print(f'*** Writing output ***') 
 with open(f'{args.output}/results.csv', 'w') as f:
     f.write('residue,flux\n')
-    for resid, flux in enumerate(flux_total):
-        f.write(f'{resid + 1},{flux:.4f}\n')
+    for res in range(args.nresidues):
+        if res in stab_index:
+            flux_res = -flux_stab[np.where(stab_index == res)[0]]
+        elif res in destab_index:
+            flux_res = flux_destab[np.where(destab_index == res)[0]]
+        f.write(f'{res+1},{flux_res[0]}\n')
 
-del flux_total
+with open(f'{args.output}/stab.dat', 'w') as f:
+    for res in stab_index:
+        f.write(f'{res+1},{total_contribution[res]}\n')
 
-rf.mplstyle()
-
-# Bar plot divided
-fig, ax = plt.subplots()
-ax.bar(np.arange(1, len(flux_positive) + 1), flux_positive, color='red',
-                 label='Destabilizing')
-ax.bar(np.arange(1, len(flux_negative) + 1), flux_negative, color='blue',
-                 label='Stabilizing')
-ax.set_xlabel(r'Residues')
-ax.set_ylabel(r'Normalized Flux')
-fig.savefig(f'{args.output}/flux_bar.png')
+with open(f'{args.output}/destab.dat', 'w') as f:
+    for res in destab_index:
+        f.write(f'{res+1},{total_contribution[res]}\n')
+print('*** Normal termination ***')
