@@ -1,6 +1,7 @@
 # SmarTSzyme
 ![alt text](./cover_temp2.png)
-**SmarTSzyme** is a command-line interface (CLI) for the rational (re-)design of enzymes.
+**SmarTSzyme** is a command-line interface (CLI) for the selection of key residues to manipulate enzyme activity for the (re-)design of enzymes. By simulating the reaction mechanism of the desired enzyme activity at the active site of the target enzyme, **SmarTSzyme** searches for those residues that (de)stabilize the enzyme/transition state (ETS) complex with respect to the enzyme substrate (ES) complex. By biasing the mutational landscape, **SmarTSzyme** guides the manipulation of enzyme activity paying attention to the catalytic mechanism in atomic detail, saving time and reducing the cost in protein engineering campaigns. \\
+
 
 ## Installation
 ### SmarTSzyme
