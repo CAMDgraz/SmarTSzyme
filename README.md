@@ -110,15 +110,13 @@ Coming soon!!!
 The corresponding publication is under preparation
 
 ## Contact
-**Laboratory of Computed-Aided Molecular Design Graz**
+**Laboratory of Computed-Aided Molecular Design Graz (Sánchez-Murcia's group)**
 
 Division of Medicinal Chemistry\
 Otto-Loewi Research Center\
 Medical University of Graz\
 Neue Stiftingstalstraße 6/III\
 A-8010 Graz, Austria
-
-Head of the Group: Ass.-Prof. Dr. Pedro A. Sánchez Murcia
  
 In case of questions and/or suggestions you can contact us at: pedro.murcia@medunigraz.at and daniel.platero-rochart@medunigraz.at
 
