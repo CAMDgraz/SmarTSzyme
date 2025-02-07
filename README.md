@@ -1,10 +1,15 @@
 # SmarTSzyme
-![alt text](./cover_temp2.png)
+<img src="images/header.png" alt="load" width="1000"/>
+
 **SmarTSzyme** is a command-line interface (CLI) designed for selecting key residues to manipulate enzyme activity in the (re)design of enzymes. By simulating the reaction mechanism of the desired enzyme activity at the active site of the target enzyme using quantum mechanics/molecular mechanics (QM/MM) methods, *SmarTSzyme* identifies residues that (de)stabilize the enzyme-transition state (ETS) complex relative to the enzyme-substrate (ES) complex. By guiding the mutational landscape, *SmarTSzyme* facilitates enzyme activity manipulation with atomic-level attention to the catalytic mechanism, ultimately saving time and reducing costs in protein engineering campaigns.
 
 *SmarTSzyme* consist of three modules:
 
-1. SIMULA, for the preparation and simulation of the catalyzed reaction by means of QM/MM molecular dynamics (MD) trajectories. Using the chemical intiution, the user can define collective variables to yield the desired product.
+<div align="center">
+<img src="images/workflow.png" alt="load" width="500"/>
+</div>
+
+1. SIMULA, for the preparation and simulation of the catalyzed reaction by means of QM/MM molecular dynamics (MD) trajectories using a friendly [Graphical User Interface](https://github.com/CAMDgraz/SmarTSzyme_plugin) (GUI).
 2. REDUCE, by the analysis of the formed trajectories, *SmarTSzyme* delivers a list of residues within a defined cut-off of residues that stabilize and destabilize the ETS with respect ES.
 3. SATURA, for the saturation of the selected positions by different methods to yield a short list of variant to text in the laboratory.
 
@@ -30,7 +35,8 @@ Remember to load the environment smartszyme_env every time you open a new termin
 conda activate smartszyme_env
 ```
 ## 1. SIMULA: simulation of the catalyzed reaction mechanism with the desired substrate ##
-xxx
+All information related to the GUI can be found [here](https://github.com/CAMDgraz/SmarTSzyme_plugin).
+
 ## 2. REDUCE: identification of the positions for protein engineering
 ## 2.1. Preparation of input files
 In this step the steered MD simulations can be analyzed within *SmarTSzyme*. In a first step, the input data (sMD trajectory, topology file, and work profile printed along the trajectory) need to be prepared for REDUCE with the script prep_smd.sh:
@@ -93,6 +99,10 @@ In the the example folder, you will find a topology, trajectory and steered MD o
 cd example
 python ../2_reduce/reduce.py -qmmm_list job_list.txt -sufix mhet -nres 562 -cr 183 450 486 562 -cutoff 10 -ncpus 1 -out out_reduce
 ```
+
+## 3. SATURA: Exploration of selected positions
+Coming soon!!!
+
 ## License
 **SmarTSzyme** is licensed under GNU General Public License v3.0.
 
@@ -111,3 +121,5 @@ A-8010 Graz, Austria
 Head of the Group: Ass.-Prof. Dr. Pedro A. Sánchez Murcia
  
 In case of questions and/or suggestions you can contact us at: pedro.murcia@medunigraz.at and daniel.platero-rochart@medunigraz.at
+
+<img src="images/logo.png" alt="load" width="200"/>
