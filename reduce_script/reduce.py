@@ -25,102 +25,154 @@ import shutil
 print("""
 ********************************************************************************
 * SmarTSzyme-reduce:                                                           *
-*      Selection of important residues for enzyme engineering                  *
+*      Selection of key residues for enzyme engineering                  *
 ********************************************************************************
 """)
 
-# Parse arguments ==============================================================
+# Handle arguments =============================================================
 args = rf.parse_arguments()
-catalytic_residues = np.asarray(args.catalytic_residues, dtype=int) - 1
 
+# Check if qmmm_list or interactions_list provided
+if args.qmmm_list and args.interactions_list:
+    print('\nError!!! Provide either qmmm_list or interactions_list.')
+    sys.exit()
+elif not args.qmmm_list and not args.interactions_list:
+    print('\nError!!! None qmmm_list or interactions_list provided.')
+    sys.exit()
+
+# Check the output argument and create the file tree
 if args.output == './':
-    print('Output path can not be ./')
+    print('Error!!! Output path can not be ./')
     sys.exit()
 try:
     os.mkdir(args.output)
     os.mkdir(f'{args.output}/matrices/')
+    os.mkdir(f'{args.output}/coupling/')
 except FileExistsError:
-    if args.force:
+    if args.force: # Delete output folder if -f
         shutil.rmtree(args.output, ignore_errors=True)
         os.mkdir(args.output)
         os.mkdir(f'{args.output}/matrices/')
+        os.mkdir(f'{args.output}/coupling/')
     else:
+        print('Error!!! Output file exist. Use -f True to overwrite.')
         raise FileExistsError
-# ==============================================================================
 
-# Read list of qmmm jobs =======================================================
-print(f'\nReading QMMM jobs from: {args.qmmm_list}')
+catalytic_residues = np.asarray(args.catalytic_residues, dtype=int) - 1
+interactions = ['vdw', 'hbonds', 'coulomb']
 jobs_df = pd.read_csv(args.qmmm_list, header=None)
 jobs = np.asarray(jobs_df.iloc[:, 0])
-print(f'Number of trajectories: {len(jobs)}\n')
+# ==============================================================================
+
+# Input options ================================================================
+print(f'\n*** User inputs ***')
+if args.qmmm_list:
+    only_flux = False
+    print(f'\nReading QMMM jobs from:          {args.qmmm_list}')
+elif args.interactions_list:
+    only_flux = True
+    print(f'\nReading interactions paths from: {args.interactions_list}')
+print(f'\nNumber of residues:              {args.nres}')
+print(f'\nCatalytic residues:              {args.catalytic_residues}')
+print(f'\nNumber of trajectories:          {len(jobs)}')
+print(f'\nNumber of CPUs:                  {args.ncpus}')
 # ==============================================================================
 
 # Get TS indices ===============================================================
-qmmm_type = 'smd'
-traj = md.load(f'{jobs[0]}/traj_{args.sufix}.nc', top=f'{jobs[0]}/top_{args.sufix}.parm7')
-nframes = traj.n_frames
-del traj
+if not only_flux:
+    # Get number of frames
+    traj = md.load(f'{jobs[0]}/traj_{args.sufix}.nc',
+                top=f'{jobs[0]}/top_{args.sufix}.parm7')
+    nframes = traj.n_frames
+    del traj
 
-if qmmm_type == 'smd':
+    # Get frame ID of the pseudo TS
+    print('\n*** Finding frame ID of the Transition State structures ***')
     ts_indices = np.zeros(len(jobs), dtype=np.int16)
     for job_idx, job in enumerate(jobs):
-        ts_index, work_lines = rf.identify_smd_TS(f'{job}/smd_{args.sufix}.txt') # args
+        ts_index, work_lines = rf.identify_smd_TS(f'{job}/smd_{args.sufix}.txt')
         factor = int(work_lines/nframes)
         if ts_index % factor != 0:
             ts_index = int(ts_index//factor + 1)
         else:
             ts_index = int(ts_index//factor)
         ts_indices[job_idx] = ts_index
+
+    # Write frame ID of the pseudo TS
+    print('\nWritting frames ID')
     with open(f'{args.output}/ts_indexes.dat', 'w') as f:
         for job, ts in zip(jobs, ts_indices):
             f.write(f'{job},{ts}\n')
+    print('\nDone')
 # ==============================================================================
 
 # Calculate matrices ===========================================================
-interactions = ['vdw', 'hbonds', 'coulomb']
+    # Non-parallelized calculation
+    if args.ncpus == 1:
+        print(f'\n*** Calculating interactions for Enzyme-Substrate complex ***')
+        for interaction in interactions:
+            print(f'    - calculating {interaction}')
+            for jobid, job in enumerate(jobs):
+                rf.calculate_matrix(interaction,
+                                    f'{job}/traj_{args.sufix}.nc',
+                                    f'{job}/top_{args.sufix}.parm7',
+                                    jobid, args.output)
+        print('\nDone')
+        print(f'\n*** Calculating interactions for (pseudo) TS complex ***')
+        for interaction in interactions:
+            print(f'    - calculating {interaction}')
+            for jobid, job in enumerate(jobs):
+                rf.calculate_matrix(interaction,
+                                    f'{job}/traj_{args.sufix}.nc',
+                                    f'{job}/top_{args.sufix}.parm7',
+                                    jobid, args.output, ts_indices[jobid] - 1)
+        print('\nDone')
+    # Parallelized calculation
+    elif args.ncpus != 1:
+        ncpus = args.ncpus
+        if args.ncpus > mp.cpu_count():
+            print(f'\nWarning!!! Not enough CPUs')
+            print(f'\nUsing the CPUs availables: {mp.cpu_count()}')
+            ncpus = mp.cpu_count()
+        print(f'\n*** Calculating interactions for Enzyme-Substrate complex ***')
+        for interaction in interactions:
+            print(f'    - calculating {interaction}')
+            arg1 = [interaction for _ in range(len(jobs))]
+            arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
+            arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
+            arg5 = [args.output for _ in jobs]
 
-# Parallel calculation
-print(f'*** Calculating interactions for Enzyme-Substrate complex ***')
-for interaction in interactions:
-    print(f'    - calculating {interaction}')
-    matrix_int = np.zeros((args.nresidues, args.nresidues))
-    arg1 = [interaction for i in range(len(jobs))]
-    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
-    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
-    arg4 = [args.cutoff/10 for i in range(len(jobs))]
-    with mp.Pool(processes=args.ncpus) as pool:
-        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
-                                                              arg4))
-    for result in results:
-        matrix_int += result
-    matrix_int /= len(jobs)
-    del results # clean memory
-    rf.write_pickle(matrix_int,
-                    f'{args.output}/matrices/{interaction}_es.pickle')
-del matrix_int
+            with mp.Pool(processes=ncpus) as pool:
+                _ = pool.starmap_async(rf.calculate_matrix,
+                                    zip(arg1, arg2, arg3, range(jobs),
+                                        arg5))
+        print('\nDone')
+        print(f'\n*** Calculating interactions for (pseudo) TS complex ***')
+        for interaction in interactions:
+            print(f'    - calculating {interaction}')
+            arg1 = [interaction for _ in range(len(jobs))]
+            arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
+            arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
+            arg5 = [args.output for _ in jobs]
 
-print(f'*** Calculating interactions for (pseudo) Transition State complex ***')
-for interaction in interactions:
-    print(f'    - calculating {interaction}')
-    matrix_int = np.zeros((args.nresidues, args.nresidues))
-    arg1 = [interaction for i in range(len(jobs))]
-    arg2 = [f'{job}/traj_{args.sufix}.nc' for job in jobs]
-    arg3 = [f'{job}/top_{args.sufix}.parm7' for job in jobs]
-    arg4 = [args.cutoff/10 for i in range(len(jobs))]
-    with mp.Pool(processes=args.ncpus) as pool:
-        results = pool.starmap(rf.calculate_matrix, zip(arg1, arg2, arg3,
-                                                         arg4, ts_indices-1))
-        # -1 to math the 0-based index
-    for result in results:
-        matrix_int += result
-    matrix_int /= len(jobs)
-    del results # clean memory
-    rf.write_pickle(matrix_int,
-                    f'{args.output}/matrices/{interaction}_pts.pickle')
-del matrix_int
+            with mp.Pool(processes=ncpus) as pool:
+                _ = pool.starmap_async(rf.calculate_matrix,
+                                    zip(arg1, arg2, arg3, range(jobs),
+                                        arg5, ts_indices - 1))
+        print('\nDone')
+    with open(f'{args.output}/matrices.dat', 'w') as f:
+        for interaction in interactions:
+            for jobid in range(job):
+                path = f'{args.output}/matrices'
+                f.write(f'{path}/es_{interaction}.{jobid}.pickle')
+                f.write(f'{path}/pts_{interaction}.{jobid}.pickle')
 # ==============================================================================
 
-# Read matrices one by one =====================================================
+# Read interaction matrices ====================================================
+
+print('\n*** Loading interaction matrices ***')
+if 
+
 matrix_es = np.zeros((args.nresidues, args.nresidues))
 for interaction in interactions:
     matrix_es += rf.load_pickle(

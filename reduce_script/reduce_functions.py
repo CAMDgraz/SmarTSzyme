@@ -28,32 +28,39 @@ def parse_arguments():
     """
     Parse arguments of the cli
     """
-    desc = '''\nReduce: Identification of key residues in order to reduce the 
-              the mutational landscape'''
+    desc = '''\nReduce: Reduction of the mutational landscape'''
     parser = argparse.ArgumentParser(prog='Reduce',
+                                     usage='reduce [OPTIONS]',
                                      description = desc,
                                      add_help=True,
                                      allow_abbrev = False)
     inputs = parser.add_argument_group(title='Input options')
-    inputs.add_argument('-qmmm_list', dest = 'qmmm_list', action = 'store', 
-                      help = 'List of QMMM jobs to analyze.',
-                      type=str, required = True)
+    inputs.add_argument('-qmmm_list', dest='qmmm_list', action='store', 
+                        help='File with the paths to the QMMM results.', 
+                        type=str, required = False)
+    
+    inputs.add_argument('-interactions_list', dest='interactions_list', 
+                        help='File with the path to the interactions matrices',
+                        action='store', required=False, type=str)
+    
     inputs.add_argument('-sufix', dest='sufix', action='store', type=str,
-                        required=True,
-                        help='Sufix for the top_, traj_ and smd_ files')
+                        help='Sufix for the top_, traj_ and smd_ files',
+                        required=True)
+    
     inputs.add_argument('-nres', dest='nresidues', action='store', type=int,
                       required=True, help='Number of residues')
-    inputs.add_argument('-cr', dest='catalytic_residues', nargs='+',
+    
+    inputs.add_argument('-catres', dest='catalytic_residues', nargs='+',
                         action='store', required=True,
-                        help='Catalytic residues')
-    inputs.add_argument('-cutoff', dest='cutoff', type=float, required=True,
-                        help='''Maximum distance between residues to be consider
-                          in the pairwise interactions (in A)''')
+                        help='ResID of the catalytic residues')
+    
     inputs.add_argument('-ncpus', dest='ncpus', required=False, default=1,
                         type=int, help='Number of CPUs to use [default: 1]')
+    
     inputs.add_argument('-f', dest='force', action='store',
                         help='Delete output folder if it exist',
                         required=False, default=False, type=bool)
+    
     outputs = parser.add_argument_group(title='Output options')
     outputs.add_argument('-out', dest='output', action='store', type=str,
                       required=False, help='Output path (different from ./)',
@@ -84,20 +91,22 @@ def load_traj(trajectory, topology):
     return traj
 
 # Main functionalities of reduce
-def pairwise_distance(atom1, atom2, coord):
+def pairwise_distance(atom1: np.ndarray,
+                      atom2: np.ndarray,
+                      coord: np.ndarray) -> np.ndarray:
     """
     Compute the pairwise distance between two arrays of atoms.
 
     Parameters
     ----------
-    atom1 : np.array
+    atom1 : np.ndarray
         Numpy array with the atom indices
-    atom2 : np.array
+    atom2 : np.ndarray
         Numpy array with the second atom indices
     
     Return
     ------
-    distance : np.array
+    distance : np.ndarray
         Numpy array with the pairwise distance
     """
     points_pair = np.vstack((atom1, atom2))
@@ -105,7 +114,7 @@ def pairwise_distance(atom1, atom2, coord):
     distance = (distance_.sum(axis=2)**(1/2)).flatten()
     return distance
 
-def identify_smd_TS(work_file):
+def identify_smd_TS(work_file: str) -> tuple[float, int]:
     """
     Finds maximum in the pulling work of a smd job.
 
@@ -117,7 +126,9 @@ def identify_smd_TS(work_file):
     Return
     ------
         maximum: float
-            Maximum found for the reaction.
+            Maximum found in the sMD job.
+        num_works: int
+            Number of pulling works.
     """
     works = pd.read_csv(work_file, skiprows=3, skipfooter=3, engine='python',
                         header=None, sep=r'\s+')
@@ -131,7 +142,60 @@ def identify_smd_TS(work_file):
             maximum_value = works[frame]
     return maximum, len(works)
 
-def edge_transfer_matrix(matrix, N):
+def get_incidence_matrix(matrix: np.ndarray) -> tuple[list, np.ndarray]:
+    """
+    Construct the incidence matrix of the interaction graph
+
+    Parameters
+    ----------
+        matrix : numpy.array
+            2D numpy array matrix of the graph.
+    
+    Return
+    ------
+        edges : list
+            List of tuples (node1,node2) containing the nodes involved in the
+            each edge.
+        incidence_matrix : np.ndarray
+            2D Numpy array with the incidence matrix. The direction is assign 
+            from the node with the lower index to the highest.
+    """
+    # Get edges from the matrix
+    edges = []
+    connections = matrix.nonzero()
+    for node1, node2 in zip(connections[0], connections[1]):
+        if (node1,node2) not in edges and (node2,node1) not in edges:
+            edges.append((node1,node2))
+    
+    incidence_matrix = np.zeros((len(matrix), len(edges)))
+    for edge, vertices in enumerate(edges):
+        incidence_matrix[vertices[0]][edge] = 1
+        incidence_matrix[vertices[1]][edge] = -1
+    return edges, incidence_matrix
+
+def get_weights(matrix: np.ndarray, edges: list) -> np.ndarray:
+    """
+    Get diagonal matrix of weights
+
+    Parameters
+    ----------
+        matrix : numpy.array
+            2D interaction matrix
+        edges : list
+            List with the tuples containing the nodes in each edge.
+
+    Return
+    ------
+        dweights : numpy.array
+            Diagonal matrix with the weights of each edge.
+    """
+    weights = np.zeros(len(edges))
+    for edge, vertices in enumerate(edges):
+        weights[edge] = matrix[vertices[0]][vertices[1]]
+    dweights = np.diag(weights)
+    return dweights
+
+def edge_transfer_matrix(matrix: np.ndarray) -> tuple[np.ndarray, list]:
     """
     Calculate the edge to edge transfer matrix used to select the most important
     residues based of the flux.
@@ -140,42 +204,61 @@ def edge_transfer_matrix(matrix, N):
     ----------
         matrix: numpy.array
             2D array with the interactions of the system.
-        N: int
-            Numeber of residues of the system.
     
     Return
     ------
         edge_to_edge: numpy.array
             2D array with the edge_to_edge propensity values.
+        esges : list
+            List with the tuples containing the nodes in each edge.
     """
-    edges = matrix.nonzero()
-    incidence = np.zeros((N, len(edges[0])))
-    for edge_id in range(incidence.shape[1]):
-        incidence[edges[0][edge_id]][edge_id] = 1
-        incidence[edges[1][edge_id]][edge_id] = -1
-    dweights = np.diag(matrix[edges[0], edges[1]])
+    edges, incidence = get_incidence_matrix(matrix)
+    dweights = get_weights(matrix, edges)
 
     # Calculate the laplacian matrix
-    laplacian_matrix = np.matmul(incidence, dweights)
-    laplacian_matrix = np.matmul(laplacian_matrix, incidence.T)
+    laplacian_matrix = incidence @ dweights
+    laplacian_matrix = laplacian_matrix @ incidence.T
 
     # Monroe-Penrose pseudoinverse
     pseudoinverse = np.linalg.pinv(laplacian_matrix)
 
     # Edge-To-Edge
-    edge_to_edge = np.matmul(dweights, incidence.T)
-    edge_to_edge = np.matmul(edge_to_edge, pseudoinverse)
-    edge_to_edge = np.matmul(edge_to_edge, incidence)
+    edge_to_edge = dweights @ incidence.T
+    edge_to_edge = edge_to_edge @ pseudoinverse
+    edge_to_edge = edge_to_edge @ incidence
 
-    return edge_to_edge
+    return edge_to_edge, edges
 
-def calculate_matrix(interaction, trajectory, topology, cutoff, ts_index=None):
+def calculate_matrix(interaction: str, trajectory: str, topology: str,
+                     jobid: int, output: str, ts_index=None) -> None:
     """
-    Calculate the Van der Waals interactions for the ES and TS.
+    Calculate interactions for the ES and TS.
+
+    Parameters
+    ----------
+        interaction: str
+            Interaction to calculate.
+        trajectory: str
+            Path to the trajectory file.
+        topology: str
+            Path to the topology file.
+        jobid: int
+            Jobid value
+        output: str
+            Path to output
+        ts_index: int
+            Frame id of the pseudo TS structure
+    
+    Return
+    ------
+        matrix: np.ndarray
+            Numpy 2D matrix (nres x nres) with the residues pairwise
+            interaction.
     """
 
     traj = load_traj(trajectory, topology=topology)
     top_info = topology_loaders.load_top(topology)
+    cutoff = 1
 
     if not ts_index:
         if interaction == 'vdw':
@@ -184,22 +267,52 @@ def calculate_matrix(interaction, trajectory, topology, cutoff, ts_index=None):
             matrix = interactions.compute_coulomb(traj[0], top_info, cutoff)
         elif interaction == 'hbonds':
             matrix = interactions.compute_hbonds(traj[0], top_info, cutoff)
+        outfile = f'{output}/matrices/es_{interaction}.{jobid}.pickle'
     else:
         if interaction == 'vdw':
             matrix = interactions.compute_vdw(traj[ts_index], top_info, cutoff)
         elif interaction == 'coulomb':
-            matrix = interactions.compute_coulomb(traj[ts_index], top_info, cutoff)
+            matrix = interactions.compute_coulomb(traj[ts_index], top_info,
+                                                  cutoff)
         elif interaction == 'hbonds':
-            matrix = interactions.compute_hbonds(traj[ts_index], top_info, cutoff)
-    return matrix
+            matrix = interactions.compute_hbonds(traj[ts_index], top_info,
+                                                 cutoff)
+        outfile = f'{output}/matrices/pts_{interaction}.{jobid}.pickle'
+    
+    write_pickle(matrix, outfile)
+    
+    return None
 
-# Output
-def write_pickle(matrix, file):
+# Output functions
+def write_pickle(matrix: np.ndarray, file: str) -> None:
+    """
+    Write pickle file
+
+    Parameters
+    ----------
+        matrix: np.ndarray
+            Numpy matrix to save
+        file: str
+            Filename for storing the matrix
+    """
     with open(file, 'wb') as f:
         pickle.dump(matrix, f)
     return None
 
-def load_pickle(file):
+def load_pickle(file: str) -> np.ndarray:
+    """
+    Load data from a pickle file
+
+    Parameters
+    ----------
+        file: str
+            Path the pickle file
+    
+    Return
+    ------
+        data: np.ndarray
+            Data contained in the pickle file
+    """
     with open(file, 'rb') as f:
         data = pickle.load(f)
     return data
