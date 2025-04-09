@@ -18,19 +18,21 @@ import pickle
 import os
 import mdtraj as md
 import matplotlib as mpl
+import glob
+import sys
 
 # SmarTSyzme imports
 import topology_loaders
 import interactions
 
 # Arguments parsing
-def parse_arguments():
+def parse_arguments_reduce():
     """
     Parse arguments of the cli
     """
     desc = '''\nReduce: Reduction of the mutational landscape'''
     parser = argparse.ArgumentParser(prog='Reduce',
-                                     usage='reduce [OPTIONS]',
+                                     usage='reduce.py [OPTIONS]',
                                      description = desc,
                                      add_help=True,
                                      allow_abbrev = False)
@@ -39,12 +41,12 @@ def parse_arguments():
                         help='File with the paths to the QMMM results.', 
                         type=str, required = False)
     
-    inputs.add_argument('-interactions_list', dest='interactions_list', 
-                        help='File with the path to the interactions matrices',
+    inputs.add_argument('-int_matrices', dest='int_matrices', 
+                        help='Path to the interaction matrices',
                         action='store', required=False, type=str)
     
-    inputs.add_argument('-sufix', dest='sufix', action='store', type=str,
-                        help='Sufix for the top_, traj_ and smd_ files',
+    inputs.add_argument('-suffix', dest='suffix', action='store', type=str,
+                        help='Suffix for the top_, traj_ and smd_ files',
                         required=True)
     
     inputs.add_argument('-nres', dest='nresidues', action='store', type=int,
@@ -65,6 +67,44 @@ def parse_arguments():
     outputs.add_argument('-out', dest='output', action='store', type=str,
                       required=False, help='Output path (different from ./)',
                       default='./out')
+    user_inputs = parser.parse_args()
+    return user_inputs
+
+def parse_arguments_analysis():
+    """
+    Parse arguments of the cli
+    """
+    parser = argparse.ArgumentParser(prog='Analysis',
+                                     usage='analysis.py [OPTIONS]',
+                                     add_help=True,
+                                     allow_abbrev = False)
+    inputs = parser.add_argument_group(title='Input')
+    inputs.add_argument('-coupling_path', dest='coupling_path', action='store',
+                        required=True, type=str,
+                        help='Path to the coupling folder of SmarTSzyme')
+    
+    inputs.add_argument('-int_path', dest='int_path', action='store',
+                        required=True, type=str,
+                        help='Path to the matrices folder of SmarTSzyme')
+    inputs.add_argument('-nres', dest='nres', type=int, action='store',
+                        required=True, help='Number of residues')
+    
+    inputs.add_argument('-batch', dest='batch', required=False, type=int,
+                        default=None, action='store',
+                        help='Increments in the number of trajectories to analyze')
+    
+    inputs.add_argument('-topn', dest='topn', action='store', type=int, 
+                        default=10, required=False, 
+                        help='Top n residues to output')
+    
+    inputs.add_argument('-exp_res', dest='exp_res', action='store', nargs='+',
+                        required=False, default=None,
+                        help='ID of experimental residues to check (1-based)')
+    
+    output = parser.add_argument_group(title='Output')
+    output.add_argument('-out', dest='output', action='store', required=False,
+                        default='./', type=str,
+                        help='Output directory')
     user_inputs = parser.parse_args()
     return user_inputs
 
@@ -283,6 +323,32 @@ def calculate_matrix(interaction: str, trajectory: str, topology: str,
     
     return None
 
+def find_matrices(path: str) -> np.ndarray:
+    """
+    Return a list with the matrices id in the path
+
+    Parameters
+    ----------
+        path: str
+            Path to the interaction matrices
+    
+    Return
+    ------
+        matrices_id: np .ndarray
+            Numpy array with the matrices id in path
+    """
+    es_matrices = glob.glob(f'{path}/es_*.pickle')
+    pts_matrices = glob.glob(f'{path}/pts_*.pickle')
+
+    if len(es_matrices) != len(pts_matrices):
+        print('\nError!!! Number of matrices for the es different than for the pts')
+        sys.exit()
+    
+    matrices_id = np.unique([int(matrix.split('.')[-2]) for matrix in
+                             es_matrices])
+    return matrices_id
+
+
 # Output functions
 def write_pickle(matrix: np.ndarray, file: str) -> None:
     """
@@ -316,42 +382,3 @@ def load_pickle(file: str) -> np.ndarray:
     with open(file, 'rb') as f:
         data = pickle.load(f)
     return data
-
-def mplstyle():
-    mpl.rcParams['axes.titlesize'] = 30
-    mpl.rcParams['axes.labelsize'] = 30
-    mpl.rcParams['axes.spines.top'] = True
-    mpl.rcParams['axes.spines.bottom'] = True
-    mpl.rcParams['axes.spines.left'] = True
-    mpl.rcParams['axes.spines.right'] = True
-    mpl.rcParams['axes.linewidth'] = 2
-    mpl.rcParams['axes.titlepad'] = 10
-
-    # Latex configuration
-    mpl.rcParams['text.usetex'] = False
-
-    # Legend configuration
-    mpl.rcParams['legend.fancybox'] = True
-    mpl.rcParams['legend.loc'] = 'lower right'
-    mpl.rcParams['legend.fontsize'] = 20
-    mpl.rcParams['legend.handletextpad'] = 0.1
-
-    # Ticks configuration
-    mpl.rcParams['xtick.labelsize'] = 20
-    mpl.rcParams['ytick.labelsize'] = 20
-    mpl.rcParams['xtick.direction'] = 'in'
-    mpl.rcParams['ytick.direction'] = 'in'
-    mpl.rcParams['xtick.color'] = (0.2, 0.2, 0.2)
-    mpl.rcParams['ytick.color'] = (0.2, 0.2, 0.2)
-
-    # Figure configuration
-    mpl.rcParams['figure.figsize'] = 10, 10
-    mpl.rcParams['figure.dpi'] = 300
-
-    # Layout
-    mpl.rcParams['figure.constrained_layout.use'] = True
-
-    # Saving
-    mpl.rcParams['savefig.dpi'] = 300
-    mpl.rcParams['savefig.transparent'] = False
-    return None
