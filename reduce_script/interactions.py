@@ -7,10 +7,11 @@
 """
 
 """
-Calculate interactions between residues 
+Interactions between residues 
 """
+
 import numpy as np
-import reduce_functions as rf
+import utils as rf
 from sklearn.neighbors import KDTree as kdtree
 
 def compute_vdw(traj, top_info, cutoff):
