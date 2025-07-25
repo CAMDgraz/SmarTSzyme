@@ -34,7 +34,7 @@ Remember to load the environment smartszyme_env every time you open a new termin
 ```bash
 conda activate smartszyme_env
 ```
-## 1. SIMULA: simulation of the catalyzed reaction mechanism with the desired substrate ##
+## 1. SmarTSzyme-GUI: simulation of the catalyzed reaction mechanism with the desired substrate ##
 All information related to the GUI can be found [here](https://github.com/CAMDgraz/SmarTSzyme_plugin).
 
 ## 2. REDUCE: identification of the positions for protein engineering
