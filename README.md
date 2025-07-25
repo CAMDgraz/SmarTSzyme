@@ -9,7 +9,7 @@
 <img src="images/workflow.png" alt="load" width="500"/>
 </div>
 
-1. SIMULA, for the preparation and simulation of the catalyzed reaction by means of QM/MM molecular dynamics (MD) trajectories using a friendly [Graphical User Interface](https://github.com/CAMDgraz/SmarTSzyme_plugin) (GUI).
+1. SmarTSzyme-GUI, for the preparation and simulation of the catalyzed reaction by means of QM/MM molecular dynamics (MD) trajectories using a friendly [Graphical User Interface](https://github.com/CAMDgraz/SmarTSzyme_plugin) (GUI).
 2. REDUCE, by the analysis of the formed trajectories, *SmarTSzyme* delivers a list of residues within a defined cut-off of residues that stabilize and destabilize the ETS with respect ES.
 3. SATURA, for the saturation of the selected positions by different methods to yield a short list of variant to text in the laboratory.
 
