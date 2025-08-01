@@ -107,7 +107,7 @@ Coming soon!!!
 **SmarTSzyme** is licensed under GNU General Public License v3.0.
 
 ## Citation
-The manuscript entitled "SmarTSzyme: biasing the mutational landscape in enzymes with QM/MM and chemical dynamics to manipulate catalytic activity" can be found in ChemRxiv here.
+The manuscript entitled "SmarTSzyme: biasing the mutational landscape in enzymes with QM/MM and chemical dynamics to manipulate catalytic activity" can be found in ChemRxiv [here](https://chemrxiv.org/engage/chemrxiv/article-details/688a6c9323be8e43d6eb241d).
 
 ## Contact
 **Laboratory of Computed-Aided Molecular Design Graz (Sánchez-Murcia's group)**
