@@ -12,24 +12,31 @@ Selection of key residues based on the structure. The method implemented is
 based on the work of Amor et. al. (doi.org/10.1038/ncomms12477). 
 """
 
-import pandas as pd
-import numpy as np
-import multiprocessing as mp
-import utils as ut
-import mdtraj as md
-import os
-import glob
-import sys
-import shutil
-
-# Handle arguments =============================================================
-args = ut.parse_arguments_reduce()
 print("""
 ********************************************************************************
 *                              SmarTSzyme-reduce                               *       
 *               Selection of key residues for enzyme engineering               *
 ********************************************************************************
 """)
+
+# Parse arguments from the CLI
+from cli import parse_reduce
+import sys
+
+if len(sys.argv) == 1:
+    parse_reduce().print_help()
+    sys.exit(1)
+args = parse_reduce().parse_args()
+
+# Remaining imports
+import pandas as pd
+import numpy as np
+import multiprocessing as mp
+import mdtraj as md
+import os
+import glob
+import shutil
+import utils as ut
 
 # Check if qmmm_list or interactions_list provided
 if args.qmmm_list and args.int_matrices:
@@ -116,8 +123,7 @@ if not only_flux:
             print(f'- calculating {interaction}')
             for jobid, job in enumerate(jobs):
                 ut.calculate_matrix(interaction,
-                                    f'{job}/traj_{args.suffix}.nc',
-                                    f'{job}/top_{args.suffix}.parm7',
+                                    job, args.suffix,
                                     jobid, args.output)
         print('Done')
         print(f'\n*** Calculating (pseudo) TS complex ***')
@@ -125,8 +131,7 @@ if not only_flux:
             print(f'- calculating {interaction}')
             for jobid, job in enumerate(jobs):
                 ut.calculate_matrix(interaction,
-                                    f'{job}/traj_{args.suffix}.nc',
-                                    f'{job}/top_{args.suffix}.parm7',
+                                    job, args.suffix,
                                     jobid, args.output, ts_indices[jobid] - 1)
         print('Done')
     # Parallelized calculation
@@ -140,8 +145,8 @@ if not only_flux:
         for interaction in interactions:
             print(f'- calculating {interaction}')
             arg1 = [interaction for _ in range(len(jobs))]
-            arg2 = [f'{job}/traj_{args.suffix}.nc' for job in jobs]
-            arg3 = [f'{job}/top_{args.suffix}.parm7' for job in jobs]
+            arg2 = [f'{job}' for job in jobs]
+            arg3 = [f'{args.suffix}' for _ in jobs]
             arg4 = np.arange(0, len(jobs))
             arg5 = [args.output for _ in jobs]
 
@@ -153,8 +158,8 @@ if not only_flux:
         for interaction in interactions:
             print(f'- calculating {interaction}')
             arg1 = [interaction for _ in range(len(jobs))]
-            arg2 = [f'{job}/traj_{args.suffix}.nc' for job in jobs]
-            arg3 = [f'{job}/top_{args.suffix}.parm7' for job in jobs]
+            arg2 = [f'{job}' for job in jobs]
+            arg3 = [f'{args.suffix}' for _ in jobs]
             arg4 = np.arange(0, len(jobs))
             arg5 = [args.output for _ in jobs]
 

@@ -6,24 +6,31 @@
 """
 Analaysis of SmarTSzyme's results
 """
-
-import glob
-import sys
-import numpy as np
-import utils as ut
-import pandas as pd
-import heapq
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import seaborn as sns
-
-args = ut.parse_arguments_analysis()
 print("""
 ********************************************************************************
 *                            SmarTSzyme-analysis                               *       
 *                      Analysis of SmarTSzyme's results                        *
 ********************************************************************************
 """)
+
+# Parser arguments from the CLI
+from cli import parse_analysis
+import sys
+
+if len(sys.argv) == 1:
+    parse_analysis().print_help()
+    sys.exit(1)
+args = parse_analysis().parse_args()
+
+# Remaining imports
+import glob
+import numpy as np
+import pandas as pd
+import heapq
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import seaborn as sns
+import utils as ut
 
 # Input options ================================================================
 print(f'*** User inputs ***')

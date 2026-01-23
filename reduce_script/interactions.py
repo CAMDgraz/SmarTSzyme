@@ -281,7 +281,7 @@ def compute_hbonds(traj, top_info, cutoff):
             hbonds_matrix[residue2][residue1] = np.sum(r_score*a_score*b_score*charge_factor)
     return hbonds_matrix
 
-def compute_coulomb(traj, top_info, cutoff):
+def compute_coulomb(traj, top_info, cutoff, charges):
     """
     Compute electrostatic interaction with taking into account the dielectric
     constant of the media (from 10.1021/acs.jctc.7b00125)
@@ -289,9 +289,7 @@ def compute_coulomb(traj, top_info, cutoff):
     n_excluded = np.asarray(top_info['NUMBER_EXCLUDED_ATOMS'])
     excluded_atoms = np.asarray(top_info['EXCLUDED_ATOMS_LIST'])
     residue_pointer = np.asarray(top_info['RESIDUE_POINTER']) - 1
-    charges = np.asarray(top_info['CHARGE'])
     names = np.asarray(top_info['ATOM_NAME'])
-    charges /= 18.2223
     coulomb_constant = 322
     max_dist = 5.5
 

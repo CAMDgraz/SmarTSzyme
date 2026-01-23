@@ -13,100 +13,15 @@ Functions used along the reduce.py script
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
-import argparse
 import pickle
 import os
 import mdtraj as md
-import matplotlib as mpl
 import glob
 import sys
 
 # SmarTSyzme imports
 import topology_loaders
 import interactions
-
-# Arguments parsing
-def parse_arguments_reduce():
-    """
-    Parse arguments of the cli
-    """
-    desc = '''\nReduce: Reduction of the mutational landscape'''
-    parser = argparse.ArgumentParser(prog='Reduce',
-                                     usage='reduce.py [OPTIONS]',
-                                     description = desc,
-                                     add_help=True,
-                                     allow_abbrev = False)
-    inputs = parser.add_argument_group(title='Input options')
-    inputs.add_argument('-qmmm_list', dest='qmmm_list', action='store', 
-                        help='File with the paths to the QMMM results.', 
-                        type=str, required = False)
-    
-    inputs.add_argument('-int_matrices', dest='int_matrices', 
-                        help='Path to the interaction matrices',
-                        action='store', required=False, type=str)
-    
-    inputs.add_argument('-suffix', dest='suffix', action='store', type=str,
-                        help='Suffix for the top_, traj_ and smd_ files',
-                        required=True)
-    
-    inputs.add_argument('-nres', dest='nresidues', action='store', type=int,
-                      required=True, help='Number of residues')
-    
-    inputs.add_argument('-catres', dest='catalytic_residues', nargs='+',
-                        action='store', required=True,
-                        help='ResID of the catalytic residues')
-    
-    inputs.add_argument('-ncpus', dest='ncpus', required=False, default=1,
-                        type=int, help='Number of CPUs to use [default: 1]')
-    
-    inputs.add_argument('-f', dest='force', action='store',
-                        help='Delete output folder if it exist',
-                        required=False, default=False, type=bool)
-    
-    outputs = parser.add_argument_group(title='Output options')
-    outputs.add_argument('-out', dest='output', action='store', type=str,
-                      required=False, help='Output path (different from ./)',
-                      default='./out')
-    user_inputs = parser.parse_args()
-    return user_inputs
-
-def parse_arguments_analysis():
-    """
-    Parse arguments of the cli
-    """
-    parser = argparse.ArgumentParser(prog='Analysis',
-                                     usage='analysis.py [OPTIONS]',
-                                     add_help=True,
-                                     allow_abbrev = False)
-    inputs = parser.add_argument_group(title='Input')
-    inputs.add_argument('-coupling_path', dest='coupling_path', action='store',
-                        required=True, type=str,
-                        help='Path to the coupling folder of SmarTSzyme')
-    
-    inputs.add_argument('-int_path', dest='int_path', action='store',
-                        required=True, type=str,
-                        help='Path to the matrices folder of SmarTSzyme')
-    inputs.add_argument('-nres', dest='nres', type=int, action='store',
-                        required=True, help='Number of residues')
-    
-    inputs.add_argument('-batch', dest='batch', required=False, type=int,
-                        default=None, action='store',
-                        help='Increments in the number of trajectories to analyze')
-    
-    inputs.add_argument('-topn', dest='topn', action='store', type=int, 
-                        default=10, required=False, 
-                        help='Top n residues to output')
-    
-    inputs.add_argument('-exp_res', dest='exp_res', action='store', nargs='+',
-                        required=False, default=None,
-                        help='ID of experimental residues to check (1-based)')
-    
-    output = parser.add_argument_group(title='Output')
-    output.add_argument('-out', dest='output', action='store', required=False,
-                        default='./', type=str,
-                        help='Output directory')
-    user_inputs = parser.parse_args()
-    return user_inputs
 
 # Topology and trajectory
 def load_traj(trajectory, topology):
@@ -269,7 +184,7 @@ def edge_transfer_matrix(matrix: np.ndarray) -> tuple[np.ndarray, list]:
 
     return edge_to_edge, edges
 
-def calculate_matrix(interaction: str, trajectory: str, topology: str,
+def calculate_matrix(interaction: str, job: str, suffix: str,
                      jobid: int, output: str, ts_index=None) -> None:
     """
     Calculate interactions for the ES and TS.
@@ -296,15 +211,20 @@ def calculate_matrix(interaction: str, trajectory: str, topology: str,
             interaction.
     """
 
-    traj = load_traj(trajectory, topology=topology)
-    top_info = topology_loaders.load_top(topology)
+    traj_file = f'{job}/traj_{suffix}.nc'
+    top_file = f'{job}/top_{suffix}.parm7'
+    qmfile = f'{job}/qmmm.out'
+    traj = load_traj(traj_file, topology=top_file)
+    top_info = topology_loaders.load_top(top_file)
     cutoff = 1
+    charges = get_charges(top_info, qmfile, ts_index)
 
     if not ts_index:
         if interaction == 'vdw':
             matrix = interactions.compute_vdw(traj[0], top_info, cutoff)
         elif interaction == 'coulomb':
-            matrix = interactions.compute_coulomb(traj[0], top_info, cutoff)
+            matrix = interactions.compute_coulomb(traj[0], top_info, cutoff,
+                                                  charges)
         elif interaction == 'hbonds':
             matrix = interactions.compute_hbonds(traj[0], top_info, cutoff)
         outfile = f'{output}/matrices/es_{interaction}.{jobid}.pickle'
@@ -313,7 +233,7 @@ def calculate_matrix(interaction: str, trajectory: str, topology: str,
             matrix = interactions.compute_vdw(traj[ts_index], top_info, cutoff)
         elif interaction == 'coulomb':
             matrix = interactions.compute_coulomb(traj[ts_index], top_info,
-                                                  cutoff)
+                                                  cutoff, charges)
         elif interaction == 'hbonds':
             matrix = interactions.compute_hbonds(traj[ts_index], top_info,
                                                  cutoff)
@@ -382,3 +302,79 @@ def load_pickle(file: str) -> np.ndarray:
     with open(file, 'rb') as f:
         data = pickle.load(f)
     return data
+
+# Find pattern in file
+def find_pattern(file:str, pattern:str) -> list:
+    """
+    Docstring for find_pattern_line
+    
+    :param file: Text file to find the pattern
+    :type file: str
+    :param pattern: Pattern to find in <file>
+    :type pattern: str
+    :return: List of tuples with the line number and the line matching the 
+             pattern
+    :rtype: list
+    """
+    matches = []
+    with open(file, 'r') as f:
+        for lno, line in enumerate(f):
+            if pattern in line:
+                matches.append((lno, line.strip()))
+    return matches
+
+# Get QM point charges
+def quantum_charges(file:str) -> tuple:
+    """
+    Extract quantum charges from smd (amber+DFTB3)
+    
+    :param file: Output file of the smd job
+    :type file: str
+    :return: Tuple with the mapping of the atom ID from the QM to the MM region
+    and the point charges for each atom in each structure.
+    :rtype: tuple
+    """
+    # Patterns in the out file to look for
+    qatoms_pattern = 'nquant'
+    qmapping_pattern = 'QM Region Cartesian Coordinates (*=link atom)'
+    qcharges_pattern = 'Atomic Charges for Step'
+
+    # Number of atoms in the QM region (without the link dummy atoms)
+    _, qatoms_match = find_pattern(file, qatoms_pattern)[0]
+    qatoms = int(qatoms_match.split()[-1])
+
+    # Mapping of the QM atoms in the MM region
+    qmapping_start, _ = find_pattern(file, qmapping_pattern)[0]
+    qmapping = pd.read_csv(file, engine='python', header=None, sep=r'\s+',
+                           skiprows=qmapping_start + 2, nrows=qatoms)
+    qmapping = np.asarray(qmapping.iloc[:, 2])
+
+    # Quantum point charges
+    qcharges_starts = find_pattern(file, qcharges_pattern)
+    qcharges = []
+    for lno, _ in qcharges_starts:
+        charges = pd.read_csv(file, engine='python', header=None, sep=r'\s+',
+                              skiprows=lno+2, nrows=qatoms)
+        qcharges.append(np.asarray(charges.iloc[:, 2]))
+    
+    return (qmapping, qcharges)
+
+def get_charges(top_info, qmfile, ts_index=None):
+    """
+    Mix the MM charges and the QM charges
+    """
+
+    # MM charges
+    charges = np.asarray(top_info['CHARGE'])
+    charges /= 18.2223 # Factor for the charges in amber
+
+    # QM charges
+    qmmapping, qmcharges = quantum_charges(qmfile)
+
+    # Replace the MM by QM in the active site
+    if not ts_index:
+        charges[qmmapping - 1] = qmcharges[0]
+    else:
+        charges[qmmapping - 1] = qmcharges[ts_index]
+    
+    return charges
